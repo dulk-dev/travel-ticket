@@ -79,7 +79,14 @@ description: 将开发对话总结为项目阶段记录或执行记录。当用�
 按照阶段记录模板生成文档。
 
 **文件命名**：`YYYYMMDD-HHMM-阶段名称.md`
+- `HHMM` 必须使用**本地时区时间**（北京时间 UTC+8），精确到分钟，不可使用 UTC 时间
 - 示例：`20250710-1430-需求分析.md`、`20250711-1020-技术选型.md`
+
+**获取当前本地时间的脚本**（在 Node fallback 终端中执行）：
+
+```javascript
+node -e "const d=new Date(); const pad=n=>String(n).padStart(2,'0'); console.log(''+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes()));"
+```
 
 **文档位置**：`docs/conversation-notes/`
 
@@ -117,8 +124,15 @@ description: 将开发对话总结为项目阶段记录或执行记录。当用�
 按照执行记录模板生成文档。
 
 **文件命名**：`YYYYMMDD-HHMM-session-NN.md`
+- `HHMM` 必须使用**本地时区时间**（北京时间 UTC+8），精确到分钟，不可使用 UTC 时间
 - NN 为当天多个执行记录的序号（01、02、...）
 - 示例：`20250711-0930-session-01.md`
+
+**获取当前本地时间的脚本**（在 Node fallback 终端中执行）：
+
+```javascript
+node -e "const d=new Date(); const pad=n=>String(n).padStart(2,'0'); console.log(''+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes()));"
+```
 
 **文档位置**：`docs/conversation-notes/`
 
