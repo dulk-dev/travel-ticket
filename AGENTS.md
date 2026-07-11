@@ -7,6 +7,7 @@
 ## 已知问题
 
 - **Windows 下 git commit 含空格信息失败**：`git commit -m "xxx"` 会被解析为多个 pathspec 参数。解决方案：将提交信息写入 `.git/COMMIT_EDITMSG` 文件，然后执行 `git commit --file=.git/COMMIT_EDITMSG`。
+- **Windows Node fallback 终端不支持中文 commit message**：在该环境下，无论使用 `git commit -m` 还是 `.git/COMMIT_EDITMSG` 方式，中文内容均会因编码问题导致乱码。因此，**所有 commit message 必须使用英文**，例如 `feat(ui): adjust ticket editor panel layout`。
 
 ## 项目目录架构
 
