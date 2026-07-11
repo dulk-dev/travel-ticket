@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full h-12 flex items-center justify-center overflow-hidden">
-    <svg ref="barcodeRef" class="w-full h-full"></svg>
+  <div class="w-full h-12 flex items-center justify-start overflow-hidden">
+    <svg ref="barcodeRef" class="h-full" style="width: auto;"></svg>
   </div>
 </template>
 
@@ -25,10 +25,11 @@ const renderBarcode = () => {
   try {
     JsBarcode(barcodeRef.value, props.value || '000000', {
       format: 'CODE128',
-      width: 2,
-      height: 40,
+      width: 1.5,
+      height: 36,
       displayValue: false,
       lineColor: props.color,
+      background: 'transparent',
       margin: 0,
     })
   } catch (err) {
