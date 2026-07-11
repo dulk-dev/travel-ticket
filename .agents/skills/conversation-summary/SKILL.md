@@ -84,11 +84,13 @@ description: 将开发对话总结为项目阶段记录或执行记录。当用�
 
 **获取当前本地时间的脚本**（在 Node fallback 终端中执行）：
 
-> **注意**：Node fallback 环境下 `node -e` 命令不支持嵌套引号，以下脚本已验证可用：
+> **注意**：Node fallback 环境下 `node -e` 命令不支持嵌套引号，`powershell` 命令也可能因终端环境差异输出为空。以下脚本已验证可用：
 
 ```bash
-powershell -Command Get-Date -Format yyyyMMdd-HHmm
+date /t && time /t
 ```
+
+输出格式为 `YYYY-MM-DD` 和 `HH:MM`，需手动拼接为 `YYYYMMDD-HHMM` 格式。
 
 **文档位置**：`docs/conversation-notes/`
 
@@ -132,11 +134,13 @@ powershell -Command Get-Date -Format yyyyMMdd-HHmm
 
 **获取当前本地时间的脚本**（在 Node fallback 终端中执行）：
 
-> **注意**：Node fallback 环境下 `node -e` 命令不支持嵌套引号，以下脚本已验证可用：
+> **注意**：Node fallback 环境下 `node -e` 命令不支持嵌套引号，`powershell` 命令也可能因终端环境差异输出为空。以下脚本已验证可用：
 
 ```bash
-powershell -Command Get-Date -Format yyyyMMdd-HHmm
+date /t && time /t
 ```
+
+输出格式为 `YYYY-MM-DD` 和 `HH:MM`，需手动拼接为 `YYYYMMDD-HHMM` 格式。
 
 **文档位置**：`docs/conversation-notes/`
 
