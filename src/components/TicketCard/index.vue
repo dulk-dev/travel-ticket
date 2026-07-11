@@ -24,7 +24,7 @@
     </div>
 
     <!-- 右侧信息区 -->
-    <div class="flex-1" :style="{ backgroundColor: infoBgColor }">
+    <div class="flex-1 min-w-0" :style="{ backgroundColor: infoBgColor }">
       <InfoArea :info="info" :text-color="textColor">
         <template #barcode>
           <Barcode :value="info.code" :color="textColor" />

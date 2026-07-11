@@ -45,7 +45,6 @@
         <!-- 信息编辑 -->
         <InfoEditor
           v-model="ticketInfo"
-          :disabled="!hasImage"
           :text-color="textColor"
         />
 
@@ -120,7 +119,6 @@
         <!-- 信息编辑 -->
         <InfoEditor
           v-model="ticketInfo"
-          :disabled="!hasImage"
           :text-color="textColor"
         />
 

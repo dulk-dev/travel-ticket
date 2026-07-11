@@ -5,12 +5,7 @@
       <input
         :value="modelValue[field.key as keyof typeof modelValue]"
         @input="updateField(field.key, ($event.target as HTMLInputElement).value)"
-        :disabled="disabled"
-        class="flex-1 px-3 py-2 rounded-lg border text-sm transition-all duration-200 outline-none"
-        :class="{
-          'bg-white/80 border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100': !disabled,
-          'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed': disabled,
-        }"
+        class="flex-1 px-3 py-2 rounded-lg border text-sm transition-all duration-200 outline-none bg-white/80 border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         :placeholder="field.placeholder"
       />
     </div>
@@ -22,12 +17,10 @@ import type { TicketInfo } from '@/composables/useMockData'
 
 interface Props {
   modelValue: TicketInfo
-  disabled?: boolean
   textColor?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  disabled: false,
   textColor: '#2C2C2C',
 })
 

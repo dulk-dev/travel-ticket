@@ -8,9 +8,15 @@
   >
     <div class="flex flex-col gap-[0.3em]">
       <!-- 地点：两行显示，字号最大，字间距最宽，字重最粗 -->
-      <div class="font-black tracking-[0.12em] leading-[1.05]" style="font-size: 2.0em;">
-        <div>{{ locationLines[0] }}</div>
-        <div>{{ locationLines[1] }}</div>
+      <div class="overflow-hidden w-full">
+        <div
+          ref="locationRef"
+          class="font-black tracking-[0.12em] leading-[1.05] origin-top-left inline-block"
+          :style="{ fontSize: '2.0em', transform: `scale(${locationScale})` }"
+        >
+          <div class="whitespace-nowrap">{{ locationLines[0] }}</div>
+          <div class="whitespace-nowrap">{{ locationLines[1] }}</div>
+        </div>
       </div>
       <!-- 日期：字号为基准的 1.15 倍 -->
       <div class="font-medium tracking-[0.06em] opacity-85" style="font-size: 1.15em;">
@@ -32,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { TicketInfo } from '@/composables/useMockData'
 import { pinyin } from 'pinyin-pro'
 
@@ -48,6 +54,8 @@ const props = withDefaults(defineProps<Props>(), {
 // 通过容器高度计算基准字号（容器高度的 10%，最小 10px）
 const infoAreaRef = ref<HTMLElement | null>(null)
 const baseFontSize = ref(10)
+const locationRef = ref<HTMLElement | null>(null)
+const locationScale = ref(1)
 
 const updateFontSize = () => {
   if (!infoAreaRef.value) return
@@ -56,12 +64,51 @@ const updateFontSize = () => {
   baseFontSize.value = Math.max(10, Math.round(height * 0.06))
 }
 
+// 使用 Canvas 测量文字宽度（不受 DOM 渲染状态影响）
+const measureTextWidth = (text: string, fontSize: number, fontWeight: number = 900): number => {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return 0
+  // 使用实际渲染的字体：系统无衬线字体 + 字重
+  ctx.font = `${fontWeight} ${fontSize}px system-ui, -apple-system, sans-serif`
+  // tracking-[0.12em] 表示每个字符后有 0.12em 的额外间距
+  const letterSpacing = fontSize * 0.12
+  const metrics = ctx.measureText(text)
+  // 文字宽度 = 实际宽度 + 字间距（最后一个字符不需要额外间距）
+  return metrics.width + (text.length - 1) * letterSpacing
+}
+
+// 检测地点文字是否溢出，动态缩小
+const updateLocationScale = () => {
+  if (!infoAreaRef.value) return
+  const containerWidth = infoAreaRef.value.clientWidth
+  // 考虑 8% 的左右 padding（px-[4%] 两边）
+  const availableWidth = containerWidth * 0.92
+
+  // 获取当前实际渲染的字号（2.0em * baseFontSize）
+  const fontSize = baseFontSize.value * 2.0
+
+  // 测量两行文字中较长的一行
+  const lines = locationLines.value
+  const maxTextWidth = Math.max(
+    measureTextWidth(lines[0], fontSize),
+    measureTextWidth(lines[1], fontSize)
+  )
+
+  if (maxTextWidth > availableWidth) {
+    locationScale.value = Math.max(0.5, availableWidth / maxTextWidth)
+  } else {
+    locationScale.value = 1
+  }
+}
+
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   updateFontSize()
   resizeObserver = new ResizeObserver(() => {
     updateFontSize()
+    updateLocationScale()
   })
   if (infoAreaRef.value) {
     resizeObserver.observe(infoAreaRef.value)
@@ -72,6 +119,14 @@ onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect()
   }
+})
+
+// 地点变化时重新计算缩放
+watch(() => props.info.location, () => {
+  locationScale.value = 1
+  nextTick(() => {
+    updateLocationScale()
+  })
 })
 
 // 将地点转换为英文大写拼音，并分为两行
