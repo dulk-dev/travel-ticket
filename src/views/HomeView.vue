@@ -3,6 +3,14 @@
     class="min-h-screen transition-colors duration-700 ease-out flex items-center justify-center p-4 md:p-8"
     :style="{ backgroundColor: pageBgColor }"
   >
+    <!-- 隐藏的文件输入，用于重新上传 -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      @change="handleUpload"
+    />
     <!-- 电脑端：左右分栏 -->
     <div class="hidden md:flex w-full max-w-6xl gap-8 items-start">
       <!-- 左侧：票根编辑区域 -->
@@ -35,45 +43,38 @@
       <!-- 右侧：票根信息编辑区域 -->
       <div class="w-80 shrink-0 space-y-6">
         <!-- 信息编辑 -->
-        <div class="space-y-3">
-          <label class="text-sm font-medium" :style="{ color: textColor }">票根信息</label>
-          <InfoEditor
-            v-model="ticketInfo"
-            :disabled="!hasImage"
-            :text-color="textColor"
-          />
-        </div>
-
-        <!-- 条形码 -->
-        <div class="pt-2">
-          <Barcode :value="ticketInfo.code" :color="textColor" />
-        </div>
+        <InfoEditor
+          v-model="ticketInfo"
+          :disabled="!hasImage"
+          :text-color="textColor"
+        />
 
         <!-- 下载按钮 -->
-        <div class="flex gap-3 pt-4">
-          <button
-            @click="downloadTicket('png')"
-            :disabled="isExporting"
-            class="flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-            :style="{
-              backgroundColor: textColor,
-              color: primaryColor,
-            }"
-          >
-            {{ isExporting ? '导出中...' : '下载 PNG' }}
-          </button>
-          <button
-            @click="downloadTicket('jpg')"
-            :disabled="isExporting"
-            class="flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-            :style="{
-              backgroundColor: textColor,
-              color: primaryColor,
-            }"
-          >
-            {{ isExporting ? '导出中...' : '下载 JPG' }}
-          </button>
-        </div>
+        <button
+          @click="downloadTicket('jpg')"
+          :disabled="isExporting"
+          class="w-full px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+          :style="{
+            backgroundColor: textColor,
+            color: primaryColor,
+          }"
+        >
+          {{ isExporting ? '导出中...' : '保存票根' }}
+        </button>
+
+        <!-- 重新上传按钮 -->
+        <button
+          @click="triggerUpload"
+          :disabled="isExporting"
+          class="w-full px-4 py-3 rounded-lg font-medium text-sm border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+          :style="{
+            borderColor: textColor + '40',
+            color: textColor + '99',
+            backgroundColor: 'transparent',
+          }"
+        >
+          重新上传照片
+        </button>
       </div>
     </div>
 
@@ -117,56 +118,48 @@
         </div>
 
         <!-- 信息编辑 -->
-        <div class="space-y-2">
-          <label class="text-sm font-medium" :style="{ color: textColor }">票根信息</label>
-          <InfoEditor
-            v-model="ticketInfo"
-            :disabled="!hasImage"
-            :text-color="textColor"
-          />
-        </div>
-
-        <!-- 条形码 -->
-        <div>
-          <Barcode :value="ticketInfo.code" :color="textColor" />
-        </div>
+        <InfoEditor
+          v-model="ticketInfo"
+          :disabled="!hasImage"
+          :text-color="textColor"
+        />
 
         <!-- 下载按钮 -->
-        <div class="flex gap-3 pt-2">
-          <button
-            @click="downloadTicket('png')"
-            :disabled="isExporting"
-            class="flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            :style="{
-              backgroundColor: textColor,
-              color: primaryColor,
-            }"
-          >
-            {{ isExporting ? '导出中...' : 'PNG' }}
-          </button>
-          <button
-            @click="downloadTicket('jpg')"
-            :disabled="isExporting"
-            class="flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            :style="{
-              backgroundColor: textColor,
-              color: primaryColor,
-            }"
-          >
-            {{ isExporting ? '导出中...' : 'JPG' }}
-          </button>
-        </div>
+        <button
+          @click="downloadTicket('jpg')"
+          :disabled="isExporting"
+          class="w-full px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          :style="{
+            backgroundColor: textColor,
+            color: primaryColor,
+          }"
+        >
+          {{ isExporting ? '导出中...' : '保存票根' }}
+        </button>
+
+        <!-- 重新上传按钮 -->
+        <button
+          @click="triggerUpload"
+          :disabled="isExporting"
+          class="w-full px-4 py-3 rounded-lg font-medium text-sm border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          :style="{
+            borderColor: textColor + '40',
+            color: textColor + '99',
+            backgroundColor: 'transparent',
+          }"
+        >
+          重新上传照片
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TicketCard from '@/components/TicketCard/index.vue'
 import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
-import Barcode from '@/components/Barcode/index.vue'
 import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
 import { useImageUpload } from '@/composables/useImageUpload'
 import { useColorExtract } from '@/composables/useColorExtract'
@@ -183,11 +176,13 @@ const ticketCardRef = ref<InstanceType<typeof TicketCard> | null>(null)
 const ticketCardRefMobile = ref<InstanceType<typeof TicketCard> | null>(null)
 
 const ticketInfo = ref<TicketInfo>({
-  location: '北京市',
-  date: '2026-07-10',
-  code: '260710',
-  randomCode: 'X8K2M',
+  location: '杭州',
+  date: '2026-04-15',
+  code: '260415',
+  randomCode: 'X5UJ5LDI',
 })
+
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const { handleInput, handleDrop: uploadDrop } = useImageUpload()
 const { extractedColors, extractColors, setPrimaryColor } = useColorExtract()
@@ -252,10 +247,14 @@ const handleColorSelect = (color: string) => {
   selectedColor.value = color
 }
 
+const triggerUpload = () => {
+  fileInputRef.value?.click()
+}
+
 const generateRandomCode = (): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let result = ''
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return result
