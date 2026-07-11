@@ -48,7 +48,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  photoWidth: '55%',
+  photoWidth: '65%',
 })
 
 const emit = defineEmits<{
@@ -61,10 +61,10 @@ const photoContainerRef = ref<HTMLElement | null>(null)
 
 const ticketStyle = computed(() => ({
   backgroundColor: props.primaryColor,
-  aspectRatio: '2 / 1',
-  maxWidth: '800px',
+  aspectRatio: '2.35 / 1',
+  maxWidth: '900px',
   width: '100%',
-  borderRadius: '16px',
+  borderRadius: '12px',
 }))
 
 const infoBgColor = computed(() => {

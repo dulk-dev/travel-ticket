@@ -4,38 +4,36 @@
     :style="{ backgroundColor: pageBgColor }"
   >
     <!-- 电脑端：左右分栏 -->
-    <div class="hidden md:flex w-full max-w-6xl gap-8 items-center">
-      <!-- 左侧票根预览 -->
-      <div class="flex-1 flex justify-center">
-        <TicketCard
-          ref="ticketCardRef"
-          :image-src="imageSrc"
-          :info="ticketInfo"
-          :primary-color="primaryColor"
-          @upload="handleUpload"
-          @drop="handleDrop"
-        />
-      </div>
-
-      <!-- 右侧编辑面板 -->
-      <div class="w-80 shrink-0 space-y-6">
-        <!-- 主题色预览 -->
-        <div class="space-y-3">
-          <label class="text-sm font-medium" :style="{ color: textColor }">主题色预览</label>
-          <div class="h-8 rounded-lg" :style="{ backgroundColor: primaryColor }"></div>
-        </div>
-
-        <!-- 候选色板 -->
-        <div class="space-y-3">
-          <label class="text-sm font-medium" :style="{ color: textColor }">候选色板</label>
-          <ColorPalette
-            v-model="selectedColor"
-            :colors="colorPalette"
-            :disabled="!hasImage"
-            @select="handleColorSelect"
+    <div class="hidden md:flex w-full max-w-6xl gap-8 items-start">
+      <!-- 左侧：票根编辑区域 -->
+      <div class="flex-1 flex flex-col gap-6">
+        <!-- 上方：票根预览 -->
+        <div class="flex justify-center">
+          <TicketCard
+            ref="ticketCardRef"
+            :image-src="imageSrc"
+            :info="ticketInfo"
+            :primary-color="primaryColor"
+            @upload="handleUpload"
+            @drop="handleDrop"
           />
         </div>
 
+        <!-- 下方：主题色预览 + 候选色板（横向排列） -->
+        <div class="flex justify-center">
+          <ThemeColorPanel
+            :primary-color="primaryColor"
+            :color-palette="colorPalette"
+            :selected-color="selectedColor"
+            :disabled="!hasImage"
+            :text-color="textColor"
+            @select="handleColorSelect"
+          />
+        </div>
+      </div>
+
+      <!-- 右侧：票根信息编辑区域 -->
+      <div class="w-80 shrink-0 space-y-6">
         <!-- 信息编辑 -->
         <div class="space-y-3">
           <label class="text-sm font-medium" :style="{ color: textColor }">票根信息</label>
@@ -169,6 +167,7 @@ import TicketCard from '@/components/TicketCard/index.vue'
 import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
 import Barcode from '@/components/Barcode/index.vue'
+import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
 import { useImageUpload } from '@/composables/useImageUpload'
 import { useColorExtract } from '@/composables/useColorExtract'
 import { useTicketExport } from '@/composables/useTicketExport'

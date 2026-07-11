@@ -84,8 +84,10 @@ description: 将开发对话总结为项目阶段记录或执行记录。当用�
 
 **获取当前本地时间的脚本**（在 Node fallback 终端中执行）：
 
-```javascript
-node -e "const d=new Date(); const pad=n=>String(n).padStart(2,'0'); console.log(''+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes()));"
+> **注意**：Node fallback 环境下 `node -e` 命令不支持嵌套引号，以下脚本已验证可用：
+
+```bash
+powershell -Command Get-Date -Format yyyyMMdd-HHmm
 ```
 
 **文档位置**：`docs/conversation-notes/`
@@ -123,15 +125,17 @@ node -e "const d=new Date(); const pad=n=>String(n).padStart(2,'0'); console.log
 
 按照执行记录模板生成文档。
 
-**文件命名**：`YYYYMMDD-HHMM-session-NN.md`
+**文件命名**：`YYYYMMDD-HHMM-内容主题.md`
 - `HHMM` 必须使用**本地时区时间**（北京时间 UTC+8），精确到分钟，不可使用 UTC 时间
-- NN 为当天多个执行记录的序号（01、02、...）
-- 示例：`20250711-0930-session-01.md`
+- 内容主题应简洁概括本次执行的核心内容，如"票根UI优化"、"登录Bug修复"等
+- 示例：`20250711-0930-票根UI优化.md`、`20250711-1430-登录Bug修复.md`
 
 **获取当前本地时间的脚本**（在 Node fallback 终端中执行）：
 
-```javascript
-node -e "const d=new Date(); const pad=n=>String(n).padStart(2,'0'); console.log(''+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes()));"
+> **注意**：Node fallback 环境下 `node -e` 命令不支持嵌套引号，以下脚本已验证可用：
+
+```bash
+powershell -Command Get-Date -Format yyyyMMdd-HHmm
 ```
 
 **文档位置**：`docs/conversation-notes/`
@@ -154,7 +158,7 @@ node -e "const d=new Date(); const pad=n=>String(n).padStart(2,'0'); console.log
 
 | 日期 | 会话 | 类型 | 目标 | 状态 |
 |------|------|------|------|------|
-| YYYY-MM-DD | [session-01](YYYYMMDD-HHMM-session-01.md) | 新增功能 | [目标描述] | 已完成 |
+| YYYY-MM-DD | [票根UI优化](YYYYMMDD-HHMM-票根UI优化.md) | 新增功能 | [目标描述] | 已完成 |
 | ... | ... | ... | ... | ... |
 
 ## 标签
