@@ -1,8 +1,8 @@
 <template>
   <div
     ref="ticketRef"
-    class="relative flex overflow-hidden shadow-2xl"
-    :style="ticketStyle"
+    class="relative flex shadow-2xl"
+    :style="ticketMaskStyle"
   >
     <!-- 左侧照片区 -->
     <div
@@ -18,8 +18,10 @@
       </PhotoArea>
     </div>
 
-    <!-- 分隔线 -->
-    <div class="w-px shrink-0" :style="{ backgroundColor: dividerColor }"></div>
+    <!-- 裁剪线分隔效果 -->
+    <div class="shrink-0 relative flex items-center justify-center" :style="tearLineStyle">
+      <div :style="tearLinePatternStyle"></div>
+    </div>
 
     <!-- 右侧信息区 -->
     <div class="flex-1" :style="{ backgroundColor: infoBgColor }">
@@ -33,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import PhotoArea from './PhotoArea.vue'
 import InfoArea from './InfoArea.vue'
 import UploadButton from '@/components/UploadButton/index.vue'
@@ -58,14 +60,50 @@ const emit = defineEmits<{
 
 const ticketRef = ref<HTMLElement | null>(null)
 const photoContainerRef = ref<HTMLElement | null>(null)
+const ticketHeight = ref(0)
 
-const ticketStyle = computed(() => ({
+// 使用 ResizeObserver 监听票根容器高度，动态计算缺口大小
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  if (ticketRef.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        ticketHeight.value = entry.contentRect.height
+      }
+    })
+    resizeObserver.observe(ticketRef.value)
+  }
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
+})
+
+const ticketBaseStyle = computed(() => ({
   backgroundColor: props.primaryColor,
   aspectRatio: '2.35 / 1',
   maxWidth: '900px',
   width: '100%',
   borderRadius: '12px',
+  overflow: 'hidden',
 }))
+
+// 票根容器样式 + mask-image 在右侧中间切出半圆形缺口
+// 缺口直径 = 票根高度的 1/5，半径 = 高度 / 10
+// 使用 radial-gradient 创建透明圆形区域，形成真正的镂空效果（阴影也会被切掉）
+const ticketMaskStyle = computed(() => {
+  // 默认半径 18px，有实际高度后按高度的 1/10 计算
+  const notchRadius = Math.max(18, Math.round(ticketHeight.value / 10))
+  const base = ticketBaseStyle.value
+  return {
+    ...base,
+    maskImage: `radial-gradient(circle at calc(100% + 2px) 50%, transparent ${notchRadius}px, black ${notchRadius + 1}px)`,
+    WebkitMaskImage: `radial-gradient(circle at calc(100% + 2px) 50%, transparent ${notchRadius}px, black ${notchRadius + 1}px)`,
+  }
+})
 
 const infoBgColor = computed(() => {
   // 票根区域比背景板稍浅
@@ -91,6 +129,31 @@ const textColor = computed(() => {
 const dividerColor = computed(() => {
   return textColor.value === '#2C2C2C' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)'
 })
+
+// 裁剪线分隔样式：使用 repeating-linear-gradient 实现虚线效果
+const tearLineStyle = computed(() => ({
+  width: '12px',
+  height: '100%',
+  backgroundColor: props.primaryColor,
+}))
+
+const tearLinePatternStyle = computed(() => {
+  const isDark = textColor.value !== '#2C2C2C'
+  const lineColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.2)'
+  return {
+    width: '3px',
+    height: '100%',
+    background: `repeating-linear-gradient(
+      to bottom,
+      ${lineColor} 0px,
+      ${lineColor} 6px,
+      transparent 6px,
+      transparent 12px
+    )`,
+  }
+})
+
+
 
 const handleUpload = (e: Event) => {
   emit('upload', e)

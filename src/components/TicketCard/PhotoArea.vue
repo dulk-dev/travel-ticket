@@ -13,7 +13,7 @@
     <div
       v-else
       class="w-full h-full flex flex-col items-center justify-center"
-      :class="{ 'border-2 border-dashed border-gray-300 rounded-lg': !imageSrc }"
+      :class="{ 'rounded-lg': !imageSrc }"
       @dragover.prevent
       @drop="onDrop"
     >
