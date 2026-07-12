@@ -78,7 +78,7 @@
     </div>
 
     <!-- 移动端：上下分栏 -->
-    <div class="flex md:hidden flex-col w-full max-w-md gap-6">
+    <div class="flex md:hidden flex-col w-full max-w-lg gap-6">
       <!-- 上方票根预览 -->
       <div class="flex justify-center">
         <TicketCard
@@ -86,7 +86,7 @@
           :image-src="imageSrc"
           :info="ticketInfo"
           :primary-color="primaryColor"
-          photo-width="45%"
+          photo-width="58%"
           @upload="handleUpload"
           @drop="handleDrop"
         />
@@ -100,13 +100,13 @@
       <!-- 下方编辑面板 -->
       <div class="space-y-5 bg-white/10 rounded-2xl p-5 backdrop-blur-sm">
         <!-- 主题色预览 -->
-        <div class="space-y-2">
+        <div class="flex flex-col gap-1">
           <label class="text-sm font-medium" :style="{ color: textColor }">主题色预览</label>
           <div class="h-6 rounded-lg" :style="{ backgroundColor: primaryColor }"></div>
         </div>
 
         <!-- 候选色板 -->
-        <div class="space-y-2">
+        <div class="flex flex-col gap-1">
           <label class="text-sm font-medium" :style="{ color: textColor }">候选色板</label>
           <ColorPalette
             v-model="selectedColor"
