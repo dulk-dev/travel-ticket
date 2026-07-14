@@ -19,7 +19,7 @@
     </div>
 
     <!-- 裁剪线分隔效果 -->
-    <div class="shrink-0 relative flex items-center justify-center" :style="tearLineStyle">
+    <div class="shrink-0 relative flex items-center justify-start" :style="tearLineStyle">
       <div :style="tearLinePatternStyle"></div>
     </div>
 
@@ -131,18 +131,25 @@ const dividerColor = computed(() => {
 })
 
 // 裁剪线分隔样式：使用 repeating-linear-gradient 实现虚线效果
+const hasImage = computed(() => Boolean(props.imageSrc))
+
 const tearLineStyle = computed(() => ({
   width: '12px',
   height: '100%',
-  backgroundColor: props.primaryColor,
+  backgroundColor: hasImage.value ? infoBgColor.value : props.primaryColor,
 }))
 
 const tearLinePatternStyle = computed(() => {
   const isDark = textColor.value !== '#2C2C2C'
-  const lineColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.2)'
+  const lineColor = hasImage.value
+    ? props.primaryColor
+    : isDark
+      ? 'rgba(255,255,255,0.35)'
+      : 'rgba(0,0,0,0.2)'
   return {
-    width: '3px',
+    width: '4px',
     height: '100%',
+    marginLeft: '1px',
     background: `repeating-linear-gradient(
       to bottom,
       ${lineColor} 0px,
