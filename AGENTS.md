@@ -114,3 +114,25 @@ evidence/
 - **目录结构变更同步更新 AGENTS.md**：任何涉及目录或文件结构变化的修改（新增/删除/移动目录或文件），在修改完成后必须同步更新本文件「项目目录架构」章节，确保架构文档与实际代码库保持一致。
 - **Git 提交范围限定为本次对话内容**：执行 `git commit` 时，只将本次对话所涉及的文件变更纳入提交，不得自动提交其他历史遗留的未暂存变更。提交前通过 `git status` 确认暂存区内容，确保提交范围精准对应本次对话的修改意图。
 - **Evidence 随代码变更一并提交**：每次执行产生的 `evidence/YYYYMMDD-HHMM-主题/` 证据材料（截图、脚本、notes.md 等）应在对应代码 commit 时一并纳入暂存区并提交，确保执行过程与代码变更可对应追溯。若单次执行涉及多次代码迭代，可在最终 commit 时统一归档并提交本次 evidence。
+
+## Git 提交规范
+
+### 提交范围
+
+1. 仅将本次对话涉及的文件加入暂存区：`git add <本次文件>`。
+2. 提交前通过一次 `git status` 确认暂存区范围。
+3. 若暂存区误包含非本次文件，移除：`git restore --staged <非本次文件>`。
+
+### Commit Message 规范
+
+- **所有 commit message 必须使用英文**。
+- 遵循 Conventional Commits 格式，例如 `feat(ui): adjust ticket editor panel layout`。
+- 必须使用 `Write` 工具将 commit message 以纯文本写入 `.git/COMMIT_EDITMSG`，然后执行 `git commit --file=.git/COMMIT_EDITMSG`。
+
+### 理想提交流程（3 步）
+
+```
+git add <本次文件>                          # 仅暂存本次对话修改的文件
+git status                                  # 确认一次暂存区范围
+git commit --file=.git/COMMIT_EDITMSG      # 完成提交（message 通过 Write 工具写入）
+```
