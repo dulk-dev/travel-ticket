@@ -160,7 +160,7 @@ import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
 import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
 import { useImageUpload } from '@/composables/useImageUpload'
-import { useColorExtract } from '@/composables/useColorExtract'
+import { useColorExtract, type DesaturationStrategy } from '@/composables/useColorExtract'
 import { useTicketExport } from '@/composables/useTicketExport'
 import { useMockData } from '@/composables/useMockData'
 import type { TicketInfo } from '@/composables/useMockData'
@@ -172,6 +172,7 @@ const hasImage = ref(false)
 const selectedColor = ref(DEFAULT_COLOR)
 const ticketCardRef = ref<InstanceType<typeof TicketCard> | null>(null)
 const ticketCardRefMobile = ref<InstanceType<typeof TicketCard> | null>(null)
+const colorStrategy = ref<DesaturationStrategy>('none')
 
 const ticketInfo = ref<TicketInfo>({
   location: '杭州',
@@ -222,7 +223,7 @@ const handleUpload = async (e: Event) => {
     imageSrc.value = result.imageSrc
     hasImage.value = true
     if (result.exifData.date) ticketInfo.value.date = result.exifData.date
-    await extractColors(result.imageSrc)
+    await extractColors(result.imageSrc, colorStrategy.value)
     selectedColor.value = extractedColors.value.primary
     ticketInfo.value.randomCode = generateRandomCode()
   }
@@ -234,7 +235,7 @@ const handleDrop = async (e: DragEvent) => {
     imageSrc.value = result.imageSrc
     hasImage.value = true
     if (result.exifData.date) ticketInfo.value.date = result.exifData.date
-    await extractColors(result.imageSrc)
+    await extractColors(result.imageSrc, colorStrategy.value)
     selectedColor.value = extractedColors.value.primary
     ticketInfo.value.randomCode = generateRandomCode()
   }
