@@ -35,13 +35,24 @@ export function useMockData() {
 
   const getDefaultLocation = async (): Promise<string> => {
     try {
-      const response = await fetch('https://ipapi.co/json/')
-      if (response.ok) {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 6000)
+      const fetchIp = async (lang?: string) => {
+        const response = await fetch(`https://ipwho.is/${lang ? `?lang=${lang}` : ''}`, {
+          signal: controller.signal,
+        })
+        if (!response.ok) return null
         const data = await response.json()
-        return data.city || data.region || '未知地点'
+        return data.success ? data : null
       }
+      // 国内用中文地名，国外用英文地名
+      const en = await fetchIp()
+      const zh = en?.country_code === 'CN' ? await fetchIp('zh-CN') : null
+      clearTimeout(timer)
+      const data = zh || en
+      if (data) return data.city || data.region || '未知地点'
     } catch {
-      // 离线模式下使用默认值
+      // 离线或接口不可用时使用默认值
     }
     return '北京市'
   }
