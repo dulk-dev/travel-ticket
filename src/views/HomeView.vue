@@ -35,14 +35,14 @@
             :color-palette="colorPalette"
             :selected-color="selectedColor"
             :disabled="!hasImage"
-            :text-color="textColor"
+            :text-color="pageTextColor"
             @select="handleColorSelect"
           />
         </div>
 
         <!-- 纸质选择 -->
         <div class="flex justify-center">
-          <PaperTexturePanel v-model="paperType" :text-color="textColor" />
+          <PaperTexturePanel v-model="paperType" :text-color="pageTextColor" />
         </div>
       </div>
 
@@ -51,7 +51,7 @@
         <!-- 信息编辑 -->
         <InfoEditor
           v-model="ticketInfo"
-          :text-color="textColor"
+          :text-color="pageTextColor"
         />
 
         <!-- 下载按钮 -->
@@ -60,8 +60,8 @@
           :disabled="isExporting"
           class="w-full px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
           :style="{
-            backgroundColor: textColor,
-            color: primaryColor,
+            backgroundColor: primaryColor,
+            color: textColor,
           }"
         >
           {{ isExporting ? '导出中...' : '保存票根' }}
@@ -73,8 +73,8 @@
           :disabled="isExporting"
           class="w-full px-4 py-3 rounded-lg font-medium text-sm border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
           :style="{
-            borderColor: textColor + '40',
-            color: textColor + '99',
+            borderColor: pageTextColor + '40',
+            color: pageTextColor + '99',
             backgroundColor: 'transparent',
           }"
         >
@@ -100,7 +100,7 @@
       </div>
 
       <!-- 提示 -->
-      <p class="text-center text-xs opacity-60" :style="{ color: textColor }">
+      <p class="text-center text-xs opacity-60" :style="{ color: pageTextColor }">
         双指缩放 · 拖动调整位置
       </p>
 
@@ -108,13 +108,13 @@
       <div class="space-y-5 bg-white/10 rounded-2xl p-5 backdrop-blur-sm">
         <!-- 主题色预览 -->
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium" :style="{ color: textColor }">主题色预览</label>
+          <label class="text-sm font-medium" :style="{ color: pageTextColor }">主题色预览</label>
           <div class="h-6 rounded-lg" :style="{ backgroundColor: primaryColor }"></div>
         </div>
 
         <!-- 候选色板 -->
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium" :style="{ color: textColor }">候选色板</label>
+          <label class="text-sm font-medium" :style="{ color: pageTextColor }">候选色板</label>
           <ColorPalette
             v-model="selectedColor"
             :colors="colorPalette"
@@ -125,13 +125,13 @@
 
         <!-- 纸质选择 -->
         <div class="flex flex-col gap-1">
-          <PaperTexturePanel v-model="paperType" :text-color="textColor" />
+          <PaperTexturePanel v-model="paperType" :text-color="pageTextColor" />
         </div>
 
         <!-- 信息编辑 -->
         <InfoEditor
           v-model="ticketInfo"
-          :text-color="textColor"
+          :text-color="pageTextColor"
         />
 
         <!-- 下载按钮 -->
@@ -140,8 +140,8 @@
           :disabled="isExporting"
           class="w-full px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           :style="{
-            backgroundColor: textColor,
-            color: primaryColor,
+            backgroundColor: primaryColor,
+            color: textColor,
           }"
         >
           {{ isExporting ? '导出中...' : '保存票根' }}
@@ -153,8 +153,8 @@
           :disabled="isExporting"
           class="w-full px-4 py-3 rounded-lg font-medium text-sm border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           :style="{
-            borderColor: textColor + '40',
-            color: textColor + '99',
+            borderColor: pageTextColor + '40',
+            color: pageTextColor + '99',
             backgroundColor: 'transparent',
           }"
         >
@@ -172,8 +172,15 @@ import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
 import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
 import PaperTexturePanel from '@/components/PaperTexturePanel/index.vue'
-import { useImageUpload } from '@/composables/useImageUpload'
-import { useColorExtract, type DesaturationStrategy } from '@/composables/useColorExtract'
+import { useImageUpload, type UploadResult } from '@/composables/useImageUpload'
+import {
+  useColorExtract,
+  hexToRgb,
+  rgbToHsl,
+  hslToRgb,
+  rgbToHex,
+  type DesaturationStrategy,
+} from '@/composables/useColorExtract'
 import { useTicketExport } from '@/composables/useTicketExport'
 import { useMockData } from '@/composables/useMockData'
 import type { TicketInfo } from '@/composables/useMockData'
@@ -224,37 +231,48 @@ const textColor = computed(() => {
 })
 
 const pageBgColor = computed(() => {
-  // 背景板比票根区域更深
-  const hex = primaryColor.value.replace('#', '')
-  const r = parseInt(hex.slice(0, 2), 16)
-  const g = parseInt(hex.slice(2, 4), 16)
-  const b = parseInt(hex.slice(4, 6), 16)
-  const darken = (c: number) => Math.max(0, Math.round(c * 0.85))
-  return `#${[darken(r), darken(g), darken(b)].map(c => c.toString(16).padStart(2, '0')).join('')}`
+  // 页面背景与票根同色相，但大幅加深并降饱和，拉开明度差让票根卡片凸显
+  const { r, g, b } = hexToRgb(primaryColor.value)
+  const hsl = rgbToHsl(r, g, b)
+  const bgL = Math.min(hsl.l * 0.5, 38)
+  const bgS = hsl.s * 0.65
+  const rgb = hslToRgb(hsl.h, bgS, bgL)
+  return rgbToHex(rgb.r, rgb.g, rgb.b)
 })
+
+// 页面上文字颜色：跟随页面背景亮度取对比色（背景加深后基本恒为浅色文字）
+const pageTextColor = computed(() => {
+  const { r, g, b } = hexToRgb(pageBgColor.value)
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000
+  return brightness > 128 ? '#2C2C2C' : '#F5F0EB'
+})
+
+const applyExifData = (exifData: Partial<TicketInfo>) => {
+  if (exifData.date) {
+    ticketInfo.value.date = exifData.date
+    // 编号与日期保持同步（YYMMDD）
+    ticketInfo.value.code = exifData.date.slice(2).replaceAll('-', '')
+  }
+  if (exifData.location) ticketInfo.value.location = exifData.location
+}
+
+const applyUploadResult = async (result: UploadResult) => {
+  imageSrc.value = result.imageSrc
+  hasImage.value = true
+  applyExifData(result.exifData)
+  await extractColors(result.imageSrc, colorStrategy.value)
+  selectedColor.value = extractedColors.value.primary
+  ticketInfo.value.randomCode = generateRandomCode()
+}
 
 const handleUpload = async (e: Event) => {
   const result = await handleInput(e)
-  if (result) {
-    imageSrc.value = result.imageSrc
-    hasImage.value = true
-    if (result.exifData.date) ticketInfo.value.date = result.exifData.date
-    await extractColors(result.imageSrc, colorStrategy.value)
-    selectedColor.value = extractedColors.value.primary
-    ticketInfo.value.randomCode = generateRandomCode()
-  }
+  if (result) await applyUploadResult(result)
 }
 
 const handleDrop = async (e: DragEvent) => {
   const result = await uploadDrop(e)
-  if (result) {
-    imageSrc.value = result.imageSrc
-    hasImage.value = true
-    if (result.exifData.date) ticketInfo.value.date = result.exifData.date
-    await extractColors(result.imageSrc, colorStrategy.value)
-    selectedColor.value = extractedColors.value.primary
-    ticketInfo.value.randomCode = generateRandomCode()
-  }
+  if (result) await applyUploadResult(result)
 }
 
 const handleColorSelect = (color: string) => {

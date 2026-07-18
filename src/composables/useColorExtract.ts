@@ -8,11 +8,11 @@ export interface ExtractedColors {
 
 export type DesaturationStrategy = 'none' | 'adaptive' | 'smart'
 
-function rgbToHex(r: number, g: number, b: number): string {
+export function rgbToHex(r: number, g: number, b: number): string {
   return `#${[r, g, b].map(x => Math.round(x).toString(16).padStart(2, '0')).join('')}`
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
   if (!result) return { r: 0, g: 0, b: 0 }
   return {
@@ -22,7 +22,7 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   }
 }
 
-function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+export function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
   r /= 255
   g /= 255
   b /= 255
@@ -46,7 +46,7 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
   return { h: h * 360, s: s * 100, l: l * 100 }
 }
 
-function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
+export function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
   h /= 360
   s /= 100
   l /= 100
