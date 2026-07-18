@@ -16,6 +16,16 @@
       >
         <UploadButton @upload="handleUpload" />
       </PhotoArea>
+      <!-- 纸纹覆盖层：让照片也带上纸张质感 -->
+      <div
+        v-if="imageSrc && overlayTileUrl"
+        class="absolute inset-0 pointer-events-none"
+        :style="{
+          backgroundImage: `url(${overlayTileUrl})`,
+          backgroundRepeat: 'repeat',
+          opacity: photoOverlayOpacity,
+        }"
+      ></div>
     </div>
 
     <!-- 裁剪线分隔效果 -->
@@ -24,13 +34,27 @@
     </div>
 
     <!-- 右侧信息区 -->
-    <div class="flex-1 min-w-0" :style="{ backgroundColor: infoBgColor }">
+    <div class="flex-1 min-w-0" :style="infoAreaStyle">
       <InfoArea :info="info" :text-color="textColor">
         <template #barcode>
           <Barcode :value="info.code" :color="textColor" />
         </template>
       </InfoArea>
     </div>
+
+    <!-- 珠光纸：整票对角渐变高光 + 彩虹色泽（珠光的五彩斑斓感） -->
+    <div
+      v-if="paperType === 'pearl'"
+      class="absolute inset-0 pointer-events-none"
+      :style="{
+        background: [
+          // 白色高光带
+          'linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.25) 40%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.20) 60%, transparent 78%)',
+          // 彩虹色泽渐变
+          'linear-gradient(125deg, rgba(255,150,180,0.13) 0%, rgba(255,225,140,0.13) 22%, rgba(150,255,190,0.12) 45%, rgba(140,200,255,0.13) 68%, rgba(225,160,255,0.12) 88%, rgba(255,150,180,0.10) 100%)',
+        ].join(', '),
+      }"
+    ></div>
   </div>
 </template>
 
@@ -41,16 +65,23 @@ import InfoArea from './InfoArea.vue'
 import UploadButton from '@/components/UploadButton/index.vue'
 import Barcode from '@/components/Barcode/index.vue'
 import type { TicketInfo } from '@/composables/useMockData'
+import {
+  usePaperTexture,
+  PHOTO_OVERLAY_OPACITY,
+  type PaperType,
+} from '@/composables/usePaperTexture'
 
 interface Props {
   imageSrc: string
   info: TicketInfo
   primaryColor: string
   photoWidth?: string
+  paperType?: PaperType
 }
 
 const props = withDefaults(defineProps<Props>(), {
   photoWidth: '65%',
+  paperType: 'none',
 })
 
 const emit = defineEmits<{
@@ -84,6 +115,8 @@ onUnmounted(() => {
 
 const ticketBaseStyle = computed(() => ({
   backgroundColor: props.primaryColor,
+  backgroundImage: baseTileUrl.value ? `url(${baseTileUrl.value})` : 'none',
+  backgroundRepeat: 'repeat',
   aspectRatio: '2.35 / 1',
   maxWidth: '900px',
   width: '100%',
@@ -116,6 +149,27 @@ const infoBgColor = computed(() => {
   return `#${[lighten(r), lighten(g), lighten(b)].map(c => c.toString(16).padStart(2, '0')).join('')}`
 })
 
+// 纸纹烘焙：底色区/信息区分别用对应颜色与灰度纹理正片叠底
+const paperTypeRef = computed(() => props.paperType)
+const primaryColorRef = computed(() => props.primaryColor)
+const { baseTileUrl, infoTileUrl, overlayTileUrl } = usePaperTexture(
+  paperTypeRef,
+  primaryColorRef,
+  infoBgColor,
+)
+
+const photoOverlayOpacity = computed(() => {
+  if (props.paperType === 'none') return 0
+  return PHOTO_OVERLAY_OPACITY[props.paperType]
+})
+
+// 信息区样式：提亮底色 + 烘焙纹理
+const infoAreaStyle = computed(() => ({
+  backgroundColor: infoBgColor.value,
+  backgroundImage: infoTileUrl.value ? `url(${infoTileUrl.value})` : 'none',
+  backgroundRepeat: 'repeat',
+}))
+
 const textColor = computed(() => {
   // 根据背景亮度决定文字颜色
   const hex = props.primaryColor.replace('#', '')
@@ -133,11 +187,17 @@ const dividerColor = computed(() => {
 // 裁剪线分隔样式：使用 repeating-linear-gradient 实现虚线效果
 const hasImage = computed(() => Boolean(props.imageSrc))
 
-const tearLineStyle = computed(() => ({
-  width: '12px',
-  height: '100%',
-  backgroundColor: hasImage.value ? infoBgColor.value : props.primaryColor,
-}))
+const tearLineStyle = computed(() => {
+  // 裁剪线条带跟随所在区域的底色与纹理
+  const tileUrl = hasImage.value ? infoTileUrl.value : baseTileUrl.value
+  return {
+    width: '12px',
+    height: '100%',
+    backgroundColor: hasImage.value ? infoBgColor.value : props.primaryColor,
+    backgroundImage: tileUrl ? `url(${tileUrl})` : 'none',
+    backgroundRepeat: 'repeat',
+  }
+})
 
 const tearLinePatternStyle = computed(() => {
   const isDark = textColor.value !== '#2C2C2C'

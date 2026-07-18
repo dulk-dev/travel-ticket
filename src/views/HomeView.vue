@@ -22,6 +22,7 @@
             :image-src="imageSrc"
             :info="ticketInfo"
             :primary-color="primaryColor"
+            :paper-type="paperType"
             @upload="handleUpload"
             @drop="handleDrop"
           />
@@ -37,6 +38,11 @@
             :text-color="textColor"
             @select="handleColorSelect"
           />
+        </div>
+
+        <!-- 纸质选择 -->
+        <div class="flex justify-center">
+          <PaperTexturePanel v-model="paperType" :text-color="textColor" />
         </div>
       </div>
 
@@ -86,6 +92,7 @@
           :image-src="imageSrc"
           :info="ticketInfo"
           :primary-color="primaryColor"
+          :paper-type="paperType"
           photo-width="58%"
           @upload="handleUpload"
           @drop="handleDrop"
@@ -114,6 +121,11 @@
             :disabled="!hasImage"
             @select="handleColorSelect"
           />
+        </div>
+
+        <!-- 纸质选择 -->
+        <div class="flex flex-col gap-1">
+          <PaperTexturePanel v-model="paperType" :text-color="textColor" />
         </div>
 
         <!-- 信息编辑 -->
@@ -159,11 +171,13 @@ import TicketCard from '@/components/TicketCard/index.vue'
 import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
 import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
+import PaperTexturePanel from '@/components/PaperTexturePanel/index.vue'
 import { useImageUpload } from '@/composables/useImageUpload'
 import { useColorExtract, type DesaturationStrategy } from '@/composables/useColorExtract'
 import { useTicketExport } from '@/composables/useTicketExport'
 import { useMockData } from '@/composables/useMockData'
 import type { TicketInfo } from '@/composables/useMockData'
+import type { PaperType } from '@/composables/usePaperTexture'
 
 const DEFAULT_COLOR = '#F5F0EB'
 
@@ -173,6 +187,8 @@ const selectedColor = ref(DEFAULT_COLOR)
 const ticketCardRef = ref<InstanceType<typeof TicketCard> | null>(null)
 const ticketCardRefMobile = ref<InstanceType<typeof TicketCard> | null>(null)
 const colorStrategy = ref<DesaturationStrategy>('none')
+// 纸质纹理：默认水彩纸
+const paperType = ref<PaperType>('watercolor')
 
 const ticketInfo = ref<TicketInfo>({
   location: '杭州',

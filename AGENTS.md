@@ -29,6 +29,12 @@ travel-ticket/
 │   └── favicon.ico
 ├── src/
 │   ├── assets/                       # 样式与静态资源
+│   │   ├── textures/                 # 纸张纹理 tile（512x512 灰度可平铺）
+│   │   │   ├── watercolor.jpg        # 水彩纸（CC0 扫描图处理）
+│   │   │   ├── cotton.jpg            # 棉卡纸（CC0 扫描图处理）
+│   │   │   ├── linen.jpg             # 布纹纸（程序化生成）
+│   │   │   ├── pearl.jpg             # 珠光纸（程序化生成）
+│   │   │   └── parchment.jpg         # 羊皮纸（扫描图 + 程序化斑驳）
 │   │   ├── base.css
 │   │   ├── logo.svg
 │   │   └── main.css
@@ -36,6 +42,7 @@ travel-ticket/
 │   │   ├── Barcode/                  # 条形码组件
 │   │   ├── ColorPalette/             # 色板选择组件
 │   │   ├── InfoEditor/               # 票根信息编辑组件
+│   │   ├── PaperTexturePanel/        # 纸质选择面板（5 种纸 + 无纹理）
 │   │   ├── ThemeColorPanel/          # 主题色面板（含预览 + 色板）
 │   │   ├── TicketCard/               # 票根卡片
 │   │   │   ├── InfoArea.vue
@@ -49,6 +56,7 @@ travel-ticket/
 │   │   ├── useColorExtract.ts        # 图片主色提取
 │   │   ├── useImageUpload.ts         # 图片上传处理
 │   │   ├── useMockData.ts            # Mock 数据生成
+│   │   ├── usePaperTexture.ts        # 纸张纹理：纹理加载 + 主题色烘焙管线
 │   │   ├── usePhotoTransform.ts      # 照片变换处理
 │   │   └── useTicketExport.ts        # 票根导出
 │   ├── views/                        # 页面视图
