@@ -53,6 +53,7 @@ travel-ticket/
 │   │   ├── TheWelcome.vue
 │   │   └── WelcomeItem.vue
 │   ├── composables/                  # 组合式函数
+│   │   ├── useCardTilt.ts            # 卡片 hover 3D 倾斜 + 全息高光
 │   │   ├── useColorExtract.ts        # 图片主色提取
 │   │   ├── useImageUpload.ts         # 图片上传处理
 │   │   ├── useMockData.ts            # Mock 数据生成

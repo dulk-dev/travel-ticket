@@ -1,9 +1,19 @@
 <template>
+  <!-- 倾斜包装层：承载 3D 透视旋转，票根本体保持平面布局 -->
   <div
-    ref="ticketRef"
-    class="relative flex shadow-2xl"
-    :style="ticketMaskStyle"
+    ref="tiltWrapperRef"
+    class="w-full"
+    :style="[tiltStyle, { maxWidth: '900px' }]"
+    @mouseenter="onMouseEnter"
+    @mousemove="onMouseMove"
+    @mouseleave="onMouseLeave"
+    @pointerdown="onPointerDown"
   >
+    <div
+      ref="ticketRef"
+      class="relative flex shadow-2xl"
+      :style="ticketMaskStyle"
+    >
     <!-- 左侧照片区 -->
     <div
       ref="photoContainerRef"
@@ -55,6 +65,14 @@
         ].join(', '),
       }"
     ></div>
+
+    <!-- 全息高光层：跟随鼠标 hover 位置的反光（导出图片时忽略） -->
+    <div
+      class="absolute inset-0 pointer-events-none"
+      data-html2canvas-ignore="true"
+      :style="glareStyle"
+    ></div>
+    </div>
   </div>
 </template>
 
@@ -70,6 +88,7 @@ import {
   PHOTO_OVERLAY_OPACITY,
   type PaperType,
 } from '@/composables/usePaperTexture'
+import { useCardTilt } from '@/composables/useCardTilt'
 
 interface Props {
   imageSrc: string
@@ -92,6 +111,11 @@ const emit = defineEmits<{
 const ticketRef = ref<HTMLElement | null>(null)
 const photoContainerRef = ref<HTMLElement | null>(null)
 const ticketHeight = ref(0)
+
+// hover 3D 倾斜 + 全息高光（作用在包装层，不影响票根布局与导出）
+const tiltWrapperRef = ref<HTMLElement | null>(null)
+const { tiltStyle, glareStyle, onMouseEnter, onMouseMove, onMouseLeave, onPointerDown } =
+  useCardTilt(tiltWrapperRef)
 
 // 使用 ResizeObserver 监听票根容器高度，动态计算缺口大小
 let resizeObserver: ResizeObserver | null = null
@@ -118,7 +142,6 @@ const ticketBaseStyle = computed(() => ({
   backgroundImage: baseTileUrl.value ? `url(${baseTileUrl.value})` : 'none',
   backgroundRepeat: 'repeat',
   aspectRatio: '2.35 / 1',
-  maxWidth: '900px',
   width: '100%',
   borderRadius: '12px',
   overflow: 'hidden',
