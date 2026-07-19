@@ -3,7 +3,7 @@
   <div
     ref="tiltWrapperRef"
     class="w-full"
-    :style="[tiltStyle, { maxWidth: '900px' }]"
+    :style="[tiltStyle, { maxWidth: '900px' }, ticketShadowStyle]"
     @mouseenter="onMouseEnter"
     @mousemove="onMouseMove"
     @mouseleave="onMouseLeave"
@@ -11,7 +11,7 @@
   >
     <div
       ref="ticketRef"
-      class="relative flex shadow-2xl"
+      class="relative flex"
       :style="ticketMaskStyle"
     >
     <!-- 左侧照片区 -->
@@ -21,6 +21,7 @@
       :style="{ width: photoWidth, height: '100%' }"
     >
       <PhotoArea
+        ref="photoAreaCompRef"
         :image-src="imageSrc"
         @drop="handleDrop"
       >
@@ -45,7 +46,7 @@
 
     <!-- 右侧信息区 -->
     <div class="flex-1 min-w-0" :style="infoAreaStyle">
-      <InfoArea :info="info" :text-color="textColor">
+      <InfoArea ref="infoAreaCompRef" :info="info" :text-color="textColor">
         <template #barcode>
           <Barcode :value="info.code" :color="textColor" />
         </template>
@@ -77,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import PhotoArea from './PhotoArea.vue'
 import InfoArea from './InfoArea.vue'
 import UploadButton from '@/components/UploadButton/index.vue'
@@ -89,6 +90,7 @@ import {
   type PaperType,
 } from '@/composables/usePaperTexture'
 import { useCardTilt } from '@/composables/useCardTilt'
+import type { PhotoState } from '@/composables/usePhotoTransform'
 
 interface Props {
   imageSrc: string
@@ -111,12 +113,23 @@ const emit = defineEmits<{
 
 const ticketRef = ref<HTMLElement | null>(null)
 const photoContainerRef = ref<HTMLElement | null>(null)
+const photoAreaCompRef = ref<InstanceType<typeof PhotoArea> | null>(null)
+const infoAreaCompRef = ref<InstanceType<typeof InfoArea> | null>(null)
 const ticketHeight = ref(0)
 
 // hover 3D 倾斜 + 全息高光（作用在包装层，不影响票根布局与导出）
 const tiltWrapperRef = ref<HTMLElement | null>(null)
 const { tiltStyle, glareStyle, onMouseEnter, onMouseMove, onMouseLeave, onPointerDown } =
   useCardTilt(tiltWrapperRef)
+
+// 整票阴影：必须放在倾斜包装层而非票根本体 —— 票根带 mask-image（右侧缺口），
+// box-shadow 会被 mask 裁掉；drop-shadow 滤镜则跟随 mask 后的真实轮廓（圆角 + 缺口镂空）投影。
+// 双层阴影模拟实物纸票：近层接触阴影（小而实）+ 远层环境阴影（大而柔）。
+// 包装层不参与导出（导出目标是 ticketRef），故导出的票根图片保持纯净无阴影。
+const ticketShadowStyle = {
+  filter:
+    'drop-shadow(0 10px 16px rgba(0, 0, 0, 0.30)) drop-shadow(0 28px 56px rgba(0, 0, 0, 0.32))',
+}
 
 // 使用 ResizeObserver 监听票根容器高度，动态计算缺口大小
 let resizeObserver: ResizeObserver | null = null
@@ -150,7 +163,8 @@ const ticketBaseStyle = computed(() => ({
 
 // 票根容器样式 + mask-image 在右侧中间切出半圆形缺口
 // 缺口直径 = 票根高度的 1/5，半径 = 高度 / 10
-// 使用 radial-gradient 创建透明圆形区域，形成真正的镂空效果（阴影也会被切掉）
+// 使用 radial-gradient 创建透明圆形区域，形成真正的镂空效果
+// 注意：mask 会裁掉落在票根边界外的 box-shadow，整票阴影因此由包装层 drop-shadow 承担
 const ticketMaskStyle = computed(() => {
   // 默认半径 18px，有实际高度后按高度的 1/10 计算
   const notchRadius = Math.max(18, Math.round(ticketHeight.value / 10))
@@ -330,7 +344,22 @@ const handleDrop = (e: DragEvent) => {
 
 const getTicketElement = () => ticketRef.value
 
+// 读取当前照片取景状态（缩放/平移 + 铺满基准尺寸），供导出实例做比例映射
+const getPhotoState = () => photoAreaCompRef.value?.getPhotoState()
+
+// 导出前置准备：字号/地点缩放/图片铺满尺寸都是 ResizeObserver 异步烘焙的，
+// 可能滞后于当前布局；html2canvas 直接克隆 DOM 快照，
+// 必须先同步重算（并可按需映射取景状态）并等待 Vue 刷进内联样式。
+const prepareForExport = async (photoState?: PhotoState) => {
+  infoAreaCompRef.value?.recompute()
+  photoAreaCompRef.value?.recompute()
+  if (photoState) photoAreaCompRef.value?.applyPhotoState(photoState)
+  await nextTick()
+}
+
 defineExpose({
   getTicketElement,
+  getPhotoState,
+  prepareForExport,
 })
 </script>

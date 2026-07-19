@@ -6,6 +6,13 @@ export interface PhotoTransform {
   translateY: number
 }
 
+// 某一容器尺寸下的完整取景状态：变换 + 对应的铺满基准尺寸。
+// 平移量是相对基准尺寸的像素值，跨容器传递时按基准尺寸比例换算即可保持取景一致。
+export interface PhotoState extends PhotoTransform {
+  baseWidth: number
+  baseHeight: number
+}
+
 export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
   const transform = ref<PhotoTransform>({
     scale: 1,

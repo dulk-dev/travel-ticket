@@ -85,8 +85,7 @@
     </div>
 
     <!-- 移动端：上下分栏 -->
-    <div class="flex md:hidden flex-col w-full max-w-lg gap-6">
-      <!-- 上方票根预览 -->
+    <div class="flex md:hidden flex-col w-full max-w-lg gap-6">      <!-- 上方票根预览 -->
       <div class="flex justify-center">
         <TicketCard
           ref="ticketCardRefMobile"
@@ -164,6 +163,24 @@
         </button>
       </div>
     </div>
+
+    <!-- 导出专用实例：常驻离屏（非 display:none），固定 900px 设计宽度布局。
+         导出直接克隆它，可视票根不做任何尺寸切换（避免导出瞬间闪跳）；
+         它始终有真实布局，ResizeObserver 烘焙值始终为 900px 状态，天然与窗口尺寸解耦。 -->
+    <div
+      class="fixed top-0 -left-[10000px] w-[900px] pointer-events-none"
+      aria-hidden="true"
+    >
+      <TicketCard
+        ref="exportCardRef"
+        :image-src="imageSrc"
+        :info="ticketInfo"
+        :primary-color="primaryColor"
+        :paper-type="paperType"
+        :page-bg-color="pageBgColor"
+        :photo-width="isDesktop ? '65%' : '58%'"
+      />
+    </div>
   </div>
 </template>
 
@@ -195,6 +212,9 @@ const hasImage = ref(false)
 const selectedColor = ref(DEFAULT_COLOR)
 const ticketCardRef = ref<InstanceType<typeof TicketCard> | null>(null)
 const ticketCardRefMobile = ref<InstanceType<typeof TicketCard> | null>(null)
+const exportCardRef = ref<InstanceType<typeof TicketCard> | null>(null)
+// 导出实例的照片区比例跟随当前可见布局（桌面 65% / 移动 58%），保证取景一致
+const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches)
 const colorStrategy = ref<DesaturationStrategy>('none')
 // 纸质纹理：默认水彩纸
 const paperType = ref<PaperType>('watercolor')
@@ -296,9 +316,16 @@ const generateRandomCode = (): string => {
 }
 
 const downloadTicket = async (format: 'png' | 'jpg') => {
-  const cardRef = ticketCardRef.value || ticketCardRefMobile.value
-  const element = cardRef?.getTicketElement()
-  if (!element) return
+  // 导出目标固定为离屏的 900px 导出实例；可视实例（桌面/移动其一）仅作为取景状态来源。
+  const visibleRef = [ticketCardRef.value, ticketCardRefMobile.value].find(
+    (c) => (c?.getTicketElement()?.offsetWidth ?? 0) > 0,
+  )
+  const exportRef = exportCardRef.value
+  const element = exportRef?.getTicketElement()
+  if (!exportRef || !element) return
+
+  // 同步重算烘焙值，并把用户在可视票根上的照片取景（缩放/平移）按比例映射到导出实例
+  await exportRef.prepareForExport(visibleRef?.getPhotoState())
 
   const dataUrl = await exportTicket(element, format)
   if (dataUrl) {
@@ -308,6 +335,10 @@ const downloadTicket = async (format: 'png' | 'jpg') => {
 }
 
 onMounted(async () => {
+  const mq = window.matchMedia('(min-width: 768px)')
+  mq.addEventListener('change', (e) => {
+    isDesktop.value = e.matches
+  })
   const mockData = await generateMockData()
   ticketInfo.value = mockData
 })

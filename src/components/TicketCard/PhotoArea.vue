@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { usePhotoTransform } from '@/composables/usePhotoTransform'
+import { usePhotoTransform, type PhotoState } from '@/composables/usePhotoTransform'
 
 interface Props {
   imageSrc: string
@@ -110,5 +110,36 @@ onBeforeUnmount(() => {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', onMouseUp)
   resizeObserver?.disconnect()
+})
+
+// 导出前同步重算图片铺满尺寸（理由同 InfoArea.recompute）
+const recompute = () => {
+  computeBaseSize()
+}
+
+// 读取当前取景状态（含铺满基准尺寸），供导出实例做比例映射
+const getPhotoState = (): PhotoState => ({
+  scale: transform.value.scale,
+  translateX: transform.value.translateX,
+  translateY: transform.value.translateY,
+  baseWidth: baseSize.value.width,
+  baseHeight: baseSize.value.height,
+})
+
+// 将另一实例的取景状态按基准尺寸比例映射到本实例（保持同一取景构图）
+const applyPhotoState = (state: PhotoState) => {
+  if (!state.baseWidth || !state.baseHeight || !baseSize.value.width || !baseSize.value.height) return
+  transform.value = {
+    scale: state.scale,
+    translateX: (state.translateX * baseSize.value.width) / state.baseWidth,
+    translateY: (state.translateY * baseSize.value.height) / state.baseHeight,
+  }
+  reclamp()
+}
+
+defineExpose({
+  recompute,
+  getPhotoState,
+  applyPhotoState,
 })
 </script>

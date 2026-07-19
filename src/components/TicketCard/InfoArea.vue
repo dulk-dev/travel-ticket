@@ -129,6 +129,17 @@ watch(() => props.info.location, () => {
   })
 })
 
+// 导出前同步重算：ResizeObserver 烘焙的字号/缩放在某些路径下可能滞后于当前布局，
+// html2canvas 克隆的是 DOM 快照，必须先自愈再导出
+const recompute = () => {
+  updateFontSize()
+  updateLocationScale()
+}
+
+defineExpose({
+  recompute,
+})
+
 // 将地点转换为英文大写拼音，并分为两行
 const locationLines = computed(() => {
   const location = props.info.location
