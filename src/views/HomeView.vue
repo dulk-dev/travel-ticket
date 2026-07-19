@@ -23,6 +23,7 @@
             :info="ticketInfo"
             :primary-color="primaryColor"
             :paper-type="paperType"
+            :page-bg-color="pageBgColor"
             @upload="handleUpload"
             @drop="handleDrop"
           />
@@ -93,6 +94,7 @@
           :info="ticketInfo"
           :primary-color="primaryColor"
           :paper-type="paperType"
+          :page-bg-color="pageBgColor"
           photo-width="58%"
           @upload="handleUpload"
           @drop="handleDrop"

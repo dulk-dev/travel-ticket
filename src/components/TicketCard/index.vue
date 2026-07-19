@@ -96,6 +96,7 @@ interface Props {
   primaryColor: string
   photoWidth?: string
   paperType?: PaperType
+  pageBgColor: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -207,22 +208,84 @@ const dividerColor = computed(() => {
   return textColor.value === '#2C2C2C' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)'
 })
 
-// 裁剪线分隔样式：使用 repeating-linear-gradient 实现虚线效果
+// 裁剪线分隔样式：无纹理时使用扁平虚线；纸张开启时使用打孔齿孔（仿实物撕线）
 const hasImage = computed(() => Boolean(props.imageSrc))
 
-const tearLineStyle = computed(() => {
-  // 裁剪线条带跟随所在区域的底色与纹理
-  const tileUrl = hasImage.value ? infoTileUrl.value : baseTileUrl.value
-  return {
-    width: '12px',
-    height: '100%',
-    backgroundColor: hasImage.value ? infoBgColor.value : props.primaryColor,
-    backgroundImage: tileUrl ? `url(${tileUrl})` : 'none',
-    backgroundRepeat: 'repeat',
-  }
-})
+// ---- 打孔齿孔 tile 烘焙 ----
+// 孔体 = 页面背景色（模拟打孔后露出票根背后的页面），加孔壁阴影/高光。
+// 与 usePaperTexture 同理烘焙为位图：html2canvas 对径向渐变支持有限，位图导出 100% 保真。
+const HOLE_TILE_W = 12 // 与裁剪线条带同宽（CSS px）
+const HOLE_TILE_H = 14 // 齿孔间距（CSS px）
+const HOLE_RADIUS = 3 // 齿孔半径（CSS px）
+const BAKE_SCALE = 3 // 烘焙分辨率倍数，匹配导出 scale
+
+const perforationTileCache = new Map<string, string>()
+
+const bakePerforationTile = (holeColor: string): string => {
+  const cached = perforationTileCache.get(holeColor)
+  if (cached) return cached
+
+  const w = HOLE_TILE_W * BAKE_SCALE
+  const h = HOLE_TILE_H * BAKE_SCALE
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+
+  // 条带两侧轻压痕（先画，孔体覆盖其上）
+  const crease = ctx.createLinearGradient(0, 0, w, 0)
+  crease.addColorStop(0, 'rgba(0,0,0,0.10)')
+  crease.addColorStop(0.28, 'rgba(0,0,0,0)')
+  crease.addColorStop(0.72, 'rgba(0,0,0,0)')
+  crease.addColorStop(1, 'rgba(0,0,0,0.10)')
+  ctx.fillStyle = crease
+  ctx.fillRect(0, 0, w, h)
+
+  const cx = w / 2
+  const cy = h / 2
+  const r = HOLE_RADIUS * BAKE_SCALE
+
+  // 孔体：页面背景色实心圆
+  ctx.fillStyle = holeColor
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 孔内下沿阴影：光来自上方，孔洞深处偏暗
+  const inner = ctx.createRadialGradient(cx, cy + r * 0.2, r * 0.3, cx, cy + r * 0.2, r)
+  inner.addColorStop(0, 'rgba(0,0,0,0)')
+  inner.addColorStop(1, 'rgba(0,0,0,0.30)')
+  ctx.fillStyle = inner
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 孔外上沿高光：纸张被打穿后上沿受光的亮弧
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)'
+  ctx.lineWidth = BAKE_SCALE * 0.9
+  ctx.beginPath()
+  ctx.arc(cx, cy, r + ctx.lineWidth, Math.PI * 1.1, Math.PI * 1.9)
+  ctx.stroke()
+
+  const url = canvas.toDataURL('image/png')
+  perforationTileCache.set(holeColor, url)
+  return url
+}
 
 const tearLinePatternStyle = computed(() => {
+  // 纸张开启：打孔齿孔
+  if (props.paperType !== 'none') {
+    return {
+      width: '100%',
+      height: '100%',
+      backgroundImage: `url(${bakePerforationTile(props.pageBgColor)})`,
+      backgroundRepeat: 'repeat-y',
+      backgroundPosition: 'center top',
+      backgroundSize: `${HOLE_TILE_W}px ${HOLE_TILE_H}px`,
+    }
+  }
+  // 无纹理：扁平虚线
   const isDark = textColor.value !== '#2C2C2C'
   const lineColor = hasImage.value
     ? props.primaryColor
@@ -240,6 +303,18 @@ const tearLinePatternStyle = computed(() => {
       transparent 6px,
       transparent 12px
     )`,
+  }
+})
+
+const tearLineStyle = computed(() => {
+  // 裁剪线条带跟随所在区域的底色与纹理
+  const tileUrl = hasImage.value ? infoTileUrl.value : baseTileUrl.value
+  return {
+    width: '12px',
+    height: '100%',
+    backgroundColor: hasImage.value ? infoBgColor.value : props.primaryColor,
+    backgroundImage: tileUrl ? `url(${tileUrl})` : 'none',
+    backgroundRepeat: 'repeat',
   }
 })
 
