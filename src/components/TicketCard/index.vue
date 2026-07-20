@@ -14,29 +14,34 @@
       class="relative flex"
       :style="ticketMaskStyle"
     >
-    <!-- 左侧照片区 -->
+    <!-- 左侧照片区：与票根边缘保持 padding 间距，照片本体圆角裁切 -->
     <div
       ref="photoContainerRef"
-      class="relative overflow-hidden"
-      :style="{ width: photoWidth, height: '100%' }"
+      class="relative"
+      :style="{ width: photoWidth, height: '100%', padding: `${photoPadding}px` }"
     >
-      <PhotoArea
-        ref="photoAreaCompRef"
-        :image-src="imageSrc"
-        @drop="handleDrop"
-      >
-        <UploadButton @upload="handleUpload" />
-      </PhotoArea>
-      <!-- 纸纹覆盖层：让照片也带上纸张质感 -->
       <div
-        v-if="imageSrc && overlayTileUrl"
-        class="absolute inset-0 pointer-events-none"
-        :style="{
-          backgroundImage: `url(${overlayTileUrl})`,
-          backgroundRepeat: 'repeat',
-          opacity: photoOverlayOpacity,
-        }"
-      ></div>
+        class="relative w-full h-full overflow-hidden"
+        :style="{ borderRadius: `${photoRadius}px` }"
+      >
+        <PhotoArea
+          ref="photoAreaCompRef"
+          :image-src="imageSrc"
+          @drop="handleDrop"
+        >
+          <UploadButton @upload="handleUpload" />
+        </PhotoArea>
+        <!-- 纸纹覆盖层：让照片也带上纸张质感 -->
+        <div
+          v-if="imageSrc && overlayTileUrl"
+          class="absolute inset-0 pointer-events-none"
+          :style="{
+            backgroundImage: `url(${overlayTileUrl})`,
+            backgroundRepeat: 'repeat',
+            opacity: photoOverlayOpacity,
+          }"
+        ></div>
+      </div>
     </div>
 
     <!-- 裁剪线分隔效果 -->
@@ -161,20 +166,124 @@ const ticketBaseStyle = computed(() => ({
   overflow: 'hidden',
 }))
 
-// 票根容器样式 + mask-image 在右侧中间切出半圆形缺口
-// 缺口直径 = 票根高度的 1/5，半径 = 高度 / 10
-// 使用 radial-gradient 创建透明圆形区域，形成真正的镂空效果
+// ---- 票根轮廓 mask 烘焙 ----
+// 轮廓包含多种异形镂空：左右边缘大半圆缺口、裁剪线位置上下小半圆缺口、
+// 左右边缘成排细小切口。单层 radial-gradient 无法表达复合镂空，
+// 与打孔齿孔同理烘焙为位图 mask（黑色 = 保留，透明 = 镂空），导出兼容性与旧实现一致。
+const MASK_SCALE = 3 // 烘焙分辨率倍数，匹配导出 scale
+
+const ticketMaskCache = new Map<string, string>()
+
+const bakeTicketMask = (w: number, h: number, photoRatio: number): string => {
+  const key = `${w}x${h}@${photoRatio}`
+  const cached = ticketMaskCache.get(key)
+  if (cached) return cached
+
+  const s = MASK_SCALE
+  const canvas = document.createElement('canvas')
+  canvas.width = w * s
+  canvas.height = h * s
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+
+  // 票根本体不透明
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  ctx.globalCompositeOperation = 'destination-out'
+  const punch = (build: () => void) => {
+    ctx.beginPath()
+    build()
+    ctx.fill()
+  }
+
+  // 左右两侧大半圆缺口：半径 = 票根高度 6%，必须小于照片区内嵌 padding（7.5%），
+  // 保证缺口只落在纸张边缘上、不会裁到照片
+  const bigR = h * 0.06 * s
+  punch(() => ctx.arc(0, canvas.height / 2, bigR, 0, Math.PI * 2))
+  punch(() => ctx.arc(canvas.width, canvas.height / 2, bigR, 0, Math.PI * 2))
+
+  // 裁剪线位置上下两个小半圆缺口：半径为大缺口一半，x 对齐裁剪线条带中心
+  const tearX = (photoRatio * w + 6) * s
+  const smallR = bigR / 2
+  punch(() => ctx.arc(tearX, 0, smallR, 0, Math.PI * 2))
+  punch(() => ctx.arc(tearX, canvas.height, smallR, 0, Math.PI * 2))
+
+  // 左右边缘成排细小切口：模仿多票相接的撕线 —— 以半圆咬口为主，
+  // 深度/尺寸/位置保持高度一致，左右两缘镜像对称，呈现平衡秩序的实物感
+  // （固定种子，同尺寸烘焙结果一致）
+  let seed = 42
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    return seed / 4294967296
+  }
+  const slotMargin = h * 0.06 * s
+  const slotSpacing = h * 0.062 * s
+
+  // 预生成整排切口参数（左右两缘镜像共用，保证对称）
+  const rows: { y: number; size: number; depth: number; triangle: boolean }[] = []
+  for (let cy = slotMargin + slotSpacing / 2; cy <= canvas.height - slotMargin; cy += slotSpacing) {
+    const size = h * (0.042 + rand() * 0.008) * s // 尺寸仅 ±10% 微差
+    const depth = h * (0.022 + rand() * 0.004) * s // 深度保持高度一致
+    const y = cy + (rand() - 0.5) * slotSpacing * 0.1 // 位置微抖动
+    // 绕开大缺口周围区域
+    if (Math.abs(y - canvas.height / 2) < bigR + size / 2 + h * 0.03 * s) continue
+    rows.push({ y, size, depth, triangle: rand() < 0.15 }) // 偶发小三角口
+  }
+
+  rows.forEach((row) => {
+    const size = row.triangle ? row.size * 0.6 : row.size
+    const depth = row.triangle ? row.depth * 0.75 : row.depth
+    for (const edgeX of [0, canvas.width]) {
+      const dir = edgeX === 0 ? 1 : -1
+      punch(() => {
+        if (row.triangle) {
+          // 小三角口：底边贴票缘，尖角朝内
+          ctx.moveTo(edgeX, row.y - size / 2)
+          ctx.lineTo(edgeX + dir * depth, row.y)
+          ctx.lineTo(edgeX, row.y + size / 2)
+        } else {
+          // 半圆咬口：圆心沿边内外偏移控制切入深度
+          ctx.arc(edgeX + dir * (size / 2 - depth), row.y, size / 2, 0, Math.PI * 2)
+        }
+      })
+    }
+  })
+
+  const url = canvas.toDataURL('image/png')
+  if (ticketMaskCache.size > 30) ticketMaskCache.clear()
+  ticketMaskCache.set(key, url)
+  return url
+}
+
+// 照片区宽度占比（'65%' → 0.65），用于定位裁剪线缺口的 x 坐标
+const photoRatio = computed(() => {
+  const m = /^([\d.]+)%$/.exec(props.photoWidth.trim())
+  const v = m?.[1] !== undefined ? parseFloat(m[1]) / 100 : NaN
+  return Number.isFinite(v) ? Math.min(Math.max(v, 0), 1) : 0.65
+})
+
+// 票根容器样式 + 位图 mask：左右大缺口、裁剪线上下小缺口、边缘细小切口一次镂空成型
 // 注意：mask 会裁掉落在票根边界外的 box-shadow，整票阴影因此由包装层 drop-shadow 承担
 const ticketMaskStyle = computed(() => {
-  // 默认半径 18px，有实际高度后按高度的 1/10 计算
-  const notchRadius = Math.max(18, Math.round(ticketHeight.value / 10))
   const base = ticketBaseStyle.value
+  // 未测量到高度时按 400px 逻辑高度烘焙（比例一致），避免首帧无 mask 闪跳
+  const h = Math.round(ticketHeight.value) || 400
+  const w = Math.round(h * 2.35)
+  const url = bakeTicketMask(w, h, photoRatio.value)
   return {
     ...base,
-    maskImage: `radial-gradient(circle at calc(100% + 2px) 50%, transparent ${notchRadius}px, black ${notchRadius + 1}px)`,
-    WebkitMaskImage: `radial-gradient(circle at calc(100% + 2px) 50%, transparent ${notchRadius}px, black ${notchRadius + 1}px)`,
+    maskImage: `url(${url})`,
+    WebkitMaskImage: `url(${url})`,
+    maskSize: '100% 100%',
+    WebkitMaskSize: '100% 100%',
   }
 })
+
+// 照片区与票根边缘的间距、照片圆角：随票根高度等比缩放
+// padding（7.5%）必须大于大缺口半径（6%），保证缺口不会裁到照片
+const photoPadding = computed(() => Math.max(14, Math.round(ticketHeight.value * 0.075)))
+const photoRadius = computed(() => Math.max(10, Math.round(ticketHeight.value * 0.04)))
 
 const infoBgColor = computed(() => {
   // 票根区域比背景板稍浅
