@@ -41,10 +41,10 @@
           />
         </div>
 
-        <!-- 纸质选择 -->
-        <div class="flex justify-center">
+        <!-- 纸质选择：暂只保留水彩纸效果，入口暂时屏蔽（组件代码保留，未来可恢复） -->
+        <!-- <div class="flex justify-center">
           <PaperTexturePanel v-model="paperType" :text-color="pageTextColor" />
-        </div>
+        </div> -->
       </div>
 
       <!-- 右侧：票根信息编辑区域 -->
@@ -124,10 +124,10 @@
           />
         </div>
 
-        <!-- 纸质选择 -->
-        <div class="flex flex-col gap-1">
+        <!-- 纸质选择：暂只保留水彩纸效果，入口暂时屏蔽（组件代码保留，未来可恢复） -->
+        <!-- <div class="flex flex-col gap-1">
           <PaperTexturePanel v-model="paperType" :text-color="pageTextColor" />
-        </div>
+        </div> -->
 
         <!-- 信息编辑 -->
         <InfoEditor
@@ -190,7 +190,8 @@ import TicketCard from '@/components/TicketCard/index.vue'
 import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
 import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
-import PaperTexturePanel from '@/components/PaperTexturePanel/index.vue'
+// 纸质选择面板已屏蔽，保留组件代码（入口恢复时取消下方注释）
+// import PaperTexturePanel from '@/components/PaperTexturePanel/index.vue'
 import { useImageUpload, type UploadResult } from '@/composables/useImageUpload'
 import {
   useColorExtract,
@@ -253,11 +254,13 @@ const textColor = computed(() => {
 })
 
 const pageBgColor = computed(() => {
-  // 页面背景与票根同色相，但大幅加深并降饱和，拉开明度差让票根卡片凸显
+  // 页面背景与票根同色相，但大幅加深并降饱和，拉开明度差让票根卡片凸显。
+  // 明度压到深色区间、饱和度大幅降低：中明度+中饱和会显"泥浆色"，
+  // 深而灰的色调更接近炭灰质感，视觉上更高级。
   const { r, g, b } = hexToRgb(primaryColor.value)
   const hsl = rgbToHsl(r, g, b)
-  const bgL = Math.min(hsl.l * 0.5, 38)
-  const bgS = hsl.s * 0.65
+  const bgL = Math.min(hsl.l * 0.28, 22)
+  const bgS = hsl.s * 0.4
   const rgb = hslToRgb(hsl.h, bgS, bgL)
   return rgbToHex(rgb.r, rgb.g, rgb.b)
 })
