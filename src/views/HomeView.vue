@@ -206,7 +206,7 @@ import { useMockData } from '@/composables/useMockData'
 import type { TicketInfo } from '@/composables/useMockData'
 import type { PaperType } from '@/composables/usePaperTexture'
 
-const DEFAULT_COLOR = '#F5F0EB'
+const DEFAULT_COLOR = '#DCE9F5'
 
 const imageSrc = ref('')
 const hasImage = ref(false)
@@ -254,13 +254,13 @@ const textColor = computed(() => {
 })
 
 const pageBgColor = computed(() => {
-  // 页面背景与票根同色相，但大幅加深并降饱和，拉开明度差让票根卡片凸显。
-  // 明度压到深色区间、饱和度大幅降低：中明度+中饱和会显"泥浆色"，
-  // 深而灰的色调更接近炭灰质感，视觉上更高级。
+  // 页面背景与票根同色相，加深降饱和让票根凸显。
+  // 明度取中间区间（避免过深显沉闷），饱和度带上下限：
+  // 下限 22 保证低饱和主题色（如浅蓝纸面）也能透出旅途活力，上限 45 防止高饱和主色刺眼
   const { r, g, b } = hexToRgb(primaryColor.value)
   const hsl = rgbToHsl(r, g, b)
-  const bgL = Math.min(hsl.l * 0.28, 22)
-  const bgS = hsl.s * 0.4
+  const bgL = Math.min(hsl.l * 0.5, 46)
+  const bgS = Math.min(Math.max(hsl.s * 0.55, 22), 45)
   const rgb = hslToRgb(hsl.h, bgS, bgL)
   return rgbToHex(rgb.r, rgb.g, rgb.b)
 })

@@ -205,7 +205,9 @@ function isColorSimilar(c1: ColorInfo, c2: ColorInfo): boolean {
 
 export function useColorExtract() {
   const extractedColors = ref<ExtractedColors>({
-    primary: '#F5F0EB',
+    // 初始为空串：未上传图片时由调用方（HomeView 的 DEFAULT_COLOR）兜底，
+    // 避免此处硬编码默认值导致默认主题色有两处来源、改一处不生效
+    primary: '',
     palette: [],
     isDarkScene: false,
   })
