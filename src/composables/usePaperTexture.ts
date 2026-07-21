@@ -49,8 +49,9 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
 /**
  * 将灰度纹理与指定颜色做正片叠底，烘焙成一张彩色纹理 tile（data URL）。
  * 烘焙产物是普通位图，html2canvas 导出时不会失真。
+ * 票根纸质与页面背景板（布纹）共用此管线，结果带缓存。
  */
-const bakeTile = (paperType: Exclude<PaperType, 'none'>, color: string): Promise<string> => {
+export const bakeTile = (paperType: Exclude<PaperType, 'none'>, color: string): Promise<string> => {
   const key = `${paperType}|${color}`
   let cached = bakeCache.get(key)
   if (!cached) {
@@ -71,6 +72,10 @@ const bakeTile = (paperType: Exclude<PaperType, 'none'>, color: string): Promise
   }
   return cached
 }
+
+/** 加载纸种灰度原图（带缓存），供需要直接采样纹理的烘焙管线使用（如打孔齿孔孔体） */
+export const loadTextureImage = (paperType: Exclude<PaperType, 'none'>): Promise<HTMLImageElement> =>
+  loadImage(RAW_TEXTURES[paperType])
 
 export function usePaperTexture(
   paperType: Ref<PaperType>,

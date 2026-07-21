@@ -8,6 +8,11 @@
 
 - **Windows 下 git commit 含空格信息失败**：`git commit -m "xxx"` 会被解析为多个 pathspec 参数。解决方案：将提交信息写入 `.git/COMMIT_EDITMSG` 文件，然后执行 `git commit --file=.git/COMMIT_EDITMSG`。
 - **Windows Node fallback 终端不支持中文 commit message**：在该环境下，无论使用 `git commit -m` 还是 `.git/COMMIT_EDITMSG` 方式，中文内容均会因编码问题导致乱码。因此，**所有 commit message 必须使用英文**，例如 `feat(ui): adjust ticket editor panel layout`。
+- **html2canvas 1.4.1 的三大限制（导出相关代码必须规避）**：
+  1. **不支持 `mask-image`**：票根轮廓缺口靠导出后处理 `applyTicketMask`（`HomeView.vue`）在 canvas 上补打，不要依赖 CSS mask 导出。
+  2. **不支持 `filter: drop-shadow`**：CSS 滤镜阴影不会出现在导出图中（项目已决定导出不带投影）。
+  3. **不支持 oklch 颜色**：Tailwind v4 的色值类（如 `text-gray-400`）编译为 oklch，会导致导出直接抛错。导出子树（票根 + 画框）内的颜色必须用 hex 任意值（如 `text-[#99a1af]`）。
+  4. **渲染完成后 ctx 残留 `scale + translate` 变换**：对导出 canvas 做后处理绘制前，必须先 `ctx.setTransform(1, 0, 0, 1, 0, 0)` 归位。
 
 ## 项目目录架构
 

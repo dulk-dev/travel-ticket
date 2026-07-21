@@ -1,7 +1,7 @@
 <template>
   <div
     class="min-h-screen transition-colors duration-700 ease-out flex items-center justify-center p-4 md:p-8"
-    :style="{ backgroundColor: pageBgColor }"
+    :style="pageBgStyle"
   >
     <!-- 隐藏的文件输入，用于重新上传 -->
     <input
@@ -166,26 +166,32 @@
 
     <!-- 导出专用实例：常驻离屏（非 display:none），固定 900px 设计宽度布局。
          导出直接克隆它，可视票根不做任何尺寸切换（避免导出瞬间闪跳）；
-         它始终有真实布局，ResizeObserver 烘焙值始终为 900px 状态，天然与窗口尺寸解耦。 -->
+         它始终有真实布局，ResizeObserver 烘焙值始终为 900px 状态，天然与窗口尺寸解耦。
+         外层为 4:3 导出画框：票根四周留出布纹背景板边距（左右 96px / 上下约 218px），
+         导出图呈现票根置于布纹桌面的摆拍感（无投影，保持画面干净）。 -->
     <div
-      class="fixed top-0 -left-[10000px] w-[900px] pointer-events-none"
+      ref="exportFrameRef"
+      class="fixed top-0 -left-[10000px] pointer-events-none flex items-center justify-center"
+      :style="exportFrameStyle"
       aria-hidden="true"
     >
-      <TicketCard
-        ref="exportCardRef"
-        :image-src="imageSrc"
-        :info="ticketInfo"
-        :primary-color="primaryColor"
-        :paper-type="paperType"
-        :page-bg-color="pageBgColor"
-        :photo-width="isDesktop ? '65%' : '58%'"
-      />
+      <div class="w-[900px] shrink-0">
+        <TicketCard
+          ref="exportCardRef"
+          :image-src="imageSrc"
+          :info="ticketInfo"
+          :primary-color="primaryColor"
+          :paper-type="paperType"
+          :page-bg-color="pageBgColor"
+          :photo-width="isDesktop ? '65%' : '58%'"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import TicketCard from '@/components/TicketCard/index.vue'
 import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
@@ -204,7 +210,7 @@ import {
 import { useTicketExport } from '@/composables/useTicketExport'
 import { useMockData } from '@/composables/useMockData'
 import type { TicketInfo } from '@/composables/useMockData'
-import type { PaperType } from '@/composables/usePaperTexture'
+import { bakeTile, type PaperType } from '@/composables/usePaperTexture'
 
 const DEFAULT_COLOR = '#DCE9F5'
 
@@ -272,6 +278,103 @@ const pageTextColor = computed(() => {
   return brightness > 128 ? '#2C2C2C' : '#F5F0EB'
 })
 
+// 页面背景板：布纹纸（深色背景色与布纹灰度图正片叠底烘焙），页面与导出画框共用同一 tile
+const bgTileUrl = ref('')
+watch(
+  pageBgColor,
+  async (color) => {
+    const url = await bakeTile('linen', color)
+    // 防止等待期间背景色又变化导致旧结果覆盖新结果
+    if (pageBgColor.value === color) bgTileUrl.value = url
+  },
+  { immediate: true },
+)
+
+const pageBgStyle = computed(() => ({
+  backgroundColor: pageBgColor.value,
+  backgroundImage: bgTileUrl.value ? `url(${bgTileUrl.value})` : 'none',
+  backgroundRepeat: 'repeat',
+}))
+
+// 导出画框：4:3（适合自媒体信息流）。票根 900px + 左右边距 96px，
+// 总宽 1092px → 高 819px，票根垂直居中后上下边距约 218px
+const exportFrameRef = ref<HTMLElement | null>(null)
+const EXPORT_FRAME_WIDTH = 900 + 96 * 2
+const EXPORT_FRAME_HEIGHT = Math.round(EXPORT_FRAME_WIDTH * 0.75)
+const EXPORT_TICKET_WIDTH = 900
+const exportFrameStyle = computed(() => ({
+  width: `${EXPORT_FRAME_WIDTH}px`,
+  height: `${EXPORT_FRAME_HEIGHT}px`,
+  ...pageBgStyle.value,
+}))
+
+// 导出后处理：html2canvas 不支持 mask-image，票根轮廓缺口（撕口/缺口）需在导出 canvas 上
+// 手动补回 —— 先按 mask 位图 destination-out 打出缺口，再 destination-over 把缺口填回
+// 画框的布纹背景（jpg 无透明通道，直接镂空会变黑）。
+// 背景 tile 相位：canvas 原点即画框原点，pattern 无需偏移即可与 CSS background-repeat 对齐。
+const bgTileImg = ref<HTMLImageElement | null>(null)
+watch(
+  bgTileUrl,
+  (url) => {
+    if (!url) {
+      bgTileImg.value = null
+      return
+    }
+    const img = new Image()
+    img.onload = () => {
+      // 主题色连续变化时旧 tile 的 onload 可能后到达，仅接受与当前 url 一致的结果
+      if (bgTileUrl.value === url) bgTileImg.value = img
+    }
+    img.src = url
+  },
+  { immediate: true },
+)
+
+const applyTicketMask = (canvas: HTMLCanvasElement, maskCanvas: HTMLCanvasElement | null) => {
+  if (!maskCanvas) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  const scale = canvas.width / EXPORT_FRAME_WIDTH
+  const ticketH = EXPORT_TICKET_WIDTH / 2.35
+  const x = ((EXPORT_FRAME_WIDTH - EXPORT_TICKET_WIDTH) / 2) * scale
+  const y = ((EXPORT_FRAME_HEIGHT - ticketH) / 2) * scale
+  const w = EXPORT_TICKET_WIDTH * scale
+  const h = ticketH * scale
+
+  // mask 语义为「黑 = 保留，透明 = 镂空」，先取反得到「仅缺口处不透明」的冲孔层，
+  // 用它 destination-out 才能正好只擦掉缺口（直接用原 mask 会把票根本体擦掉）
+  const inv = document.createElement('canvas')
+  inv.width = maskCanvas.width
+  inv.height = maskCanvas.height
+  const invCtx = inv.getContext('2d')
+  if (!invCtx) return
+  invCtx.fillStyle = '#000'
+  invCtx.fillRect(0, 0, inv.width, inv.height)
+  invCtx.globalCompositeOperation = 'destination-out'
+  invCtx.drawImage(maskCanvas, 0, 0)
+
+  // 注意：html2canvas 渲染完成后会在 ctx 上残留 scale + translate 变换，
+  // 必须先归位到单位矩阵，再按设备像素坐标绘制
+  ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.drawImage(inv, x, y, w, h)
+  // 缺口回填画框的布纹背景（jpg 无透明通道，镂空后必须回填，否则变黑）。
+  // 布纹 tile 已烘焙进背景色，直接平铺即为完整背景观感；tile 未加载时退化为纯色。
+  // 注意只能画一次 destination-over：第一次填充后缺口已不再透明，第二次填充不会生效。
+  ctx.globalCompositeOperation = 'destination-over'
+  const pattern = bgTileImg.value ? ctx.createPattern(bgTileImg.value, 'repeat') : null
+  if (pattern) {
+    // 纹理 tile 按 CSS px 设计（512px），canvas 为设备像素（scale 3），pattern 需同步放大对齐
+    pattern.setTransform(new DOMMatrix().scale(scale))
+    ctx.fillStyle = pattern
+  } else {
+    ctx.fillStyle = pageBgColor.value
+  }
+  ctx.fillRect(x, y, w, h)
+  ctx.restore()
+}
+
 const applyExifData = (exifData: Partial<TicketInfo>) => {
   if (exifData.date) {
     ticketInfo.value.date = exifData.date
@@ -319,18 +422,22 @@ const generateRandomCode = (): string => {
 }
 
 const downloadTicket = async (format: 'png' | 'jpg') => {
-  // 导出目标固定为离屏的 900px 导出实例；可视实例（桌面/移动其一）仅作为取景状态来源。
+  // 导出目标固定为离屏的 4:3 画框（票根 + 布纹背景板边距）；
+  // 可视实例（桌面/移动其一）仅作为取景状态来源。
   const visibleRef = [ticketCardRef.value, ticketCardRefMobile.value].find(
     (c) => (c?.getTicketElement()?.offsetWidth ?? 0) > 0,
   )
   const exportRef = exportCardRef.value
-  const element = exportRef?.getTicketElement()
-  if (!exportRef || !element) return
+  const frame = exportFrameRef.value
+  if (!exportRef || !frame) return
 
   // 同步重算烘焙值，并把用户在可视票根上的照片取景（缩放/平移）按比例映射到导出实例
   await exportRef.prepareForExport(visibleRef?.getPhotoState())
 
-  const dataUrl = await exportTicket(element, format)
+  const maskCanvas = exportRef.getMaskCanvas()
+  const dataUrl = await exportTicket(frame, format, (canvas) => {
+    applyTicketMask(canvas, maskCanvas)
+  })
   if (dataUrl) {
     const ext = format === 'jpg' ? 'jpg' : 'png'
     downloadImage(dataUrl, `旅行票根-${ticketInfo.value.code}-${ticketInfo.value.randomCode}.${ext}`)

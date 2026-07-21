@@ -2,7 +2,7 @@
   <!-- 倾斜包装层：承载 3D 透视旋转，票根本体保持平面布局 -->
   <div
     ref="tiltWrapperRef"
-    class="w-full"
+    class="w-full relative"
     :style="[tiltStyle, { maxWidth: '900px' }, ticketShadowStyle]"
     @mouseenter="onMouseEnter"
     @mousemove="onMouseMove"
@@ -92,6 +92,7 @@ import type { TicketInfo } from '@/composables/useMockData'
 import {
   usePaperTexture,
   PHOTO_OVERLAY_OPACITY,
+  loadTextureImage,
   type PaperType,
 } from '@/composables/usePaperTexture'
 import { useCardTilt } from '@/composables/useCardTilt'
@@ -130,7 +131,7 @@ const { tiltStyle, glareStyle, onMouseEnter, onMouseMove, onMouseLeave, onPointe
 // 整票阴影：必须放在倾斜包装层而非票根本体 —— 票根带 mask-image（右侧缺口），
 // box-shadow 会被 mask 裁掉；drop-shadow 滤镜则跟随 mask 后的真实轮廓（圆角 + 缺口镂空）投影。
 // 双层阴影模拟实物纸票：近层接触阴影（小而实）+ 远层环境阴影（大而柔）。
-// 包装层不参与导出（导出目标是 ticketRef），故导出的票根图片保持纯净无阴影。
+// html2canvas 不支持 filter，导出图中自然不含此阴影（导出决定无投影，与之一致）。
 const ticketShadowStyle = {
   filter:
     'drop-shadow(0 10px 16px rgba(0, 0, 0, 0.30)) drop-shadow(0 28px 56px rgba(0, 0, 0, 0.32))',
@@ -138,6 +139,14 @@ const ticketShadowStyle = {
 
 // 使用 ResizeObserver 监听票根容器高度，动态计算缺口大小
 let resizeObserver: ResizeObserver | null = null
+
+// 背景板布纹原图：打孔齿孔孔体用它与页面背景色正片叠底，模拟打穿后露出布纹背景板
+const bgTextureImg = ref<HTMLImageElement | null>(null)
+loadTextureImage('linen')
+  .then((img) => {
+    bgTextureImg.value = img
+  })
+  .catch(() => {})
 
 onMounted(() => {
   if (ticketRef.value) {
@@ -172,9 +181,14 @@ const ticketBaseStyle = computed(() => ({
 // 与打孔齿孔同理烘焙为位图 mask（黑色 = 保留，透明 = 镂空），导出兼容性与旧实现一致。
 const MASK_SCALE = 3 // 烘焙分辨率倍数，匹配导出 scale
 
-const ticketMaskCache = new Map<string, string>()
+// 缓存同时保留 canvas（供导出投影烘焙复用）与 data URL（供 mask-image 使用）
+interface MaskEntry {
+  canvas: HTMLCanvasElement
+  url: string
+}
+const ticketMaskCache = new Map<string, MaskEntry>()
 
-const bakeTicketMask = (w: number, h: number, photoRatio: number): string => {
+const getTicketMask = (w: number, h: number, photoRatio: number): MaskEntry | null => {
   const key = `${w}x${h}@${photoRatio}`
   const cached = ticketMaskCache.get(key)
   if (cached) return cached
@@ -184,7 +198,7 @@ const bakeTicketMask = (w: number, h: number, photoRatio: number): string => {
   canvas.width = w * s
   canvas.height = h * s
   const ctx = canvas.getContext('2d')
-  if (!ctx) return ''
+  if (!ctx) return null
 
   // 票根本体不透明
   ctx.fillStyle = '#000'
@@ -250,10 +264,10 @@ const bakeTicketMask = (w: number, h: number, photoRatio: number): string => {
     }
   })
 
-  const url = canvas.toDataURL('image/png')
+  const entry: MaskEntry = { canvas, url: canvas.toDataURL('image/png') }
   if (ticketMaskCache.size > 30) ticketMaskCache.clear()
-  ticketMaskCache.set(key, url)
-  return url
+  ticketMaskCache.set(key, entry)
+  return entry
 }
 
 // 照片区宽度占比（'65%' → 0.65），用于定位裁剪线缺口的 x 坐标
@@ -270,7 +284,7 @@ const ticketMaskStyle = computed(() => {
   // 未测量到高度时按 400px 逻辑高度烘焙（比例一致），避免首帧无 mask 闪跳
   const h = Math.round(ticketHeight.value) || 400
   const w = Math.round(h * 2.35)
-  const url = bakeTicketMask(w, h, photoRatio.value)
+  const url = getTicketMask(w, h, photoRatio.value)?.url ?? ''
   return {
     ...base,
     maskImage: `url(${url})`,
@@ -335,7 +349,7 @@ const dividerColor = computed(() => {
 const hasImage = computed(() => Boolean(props.imageSrc))
 
 // ---- 打孔齿孔 tile 烘焙 ----
-// 孔体 = 页面背景色（模拟打孔后露出票根背后的页面），加孔壁阴影/高光。
+// 孔体 = 页面背景色 + 背景板布纹（模拟打孔后露出票根背后的布纹页面），加孔壁阴影/高光。
 // 与 usePaperTexture 同理烘焙为位图：html2canvas 对径向渐变支持有限，位图导出 100% 保真。
 const HOLE_TILE_W = 12 // 与裁剪线条带同宽（CSS px）
 const HOLE_TILE_H = 14 // 齿孔间距（CSS px）
@@ -344,8 +358,9 @@ const BAKE_SCALE = 3 // 烘焙分辨率倍数，匹配导出 scale
 
 const perforationTileCache = new Map<string, string>()
 
-const bakePerforationTile = (holeColor: string): string => {
-  const cached = perforationTileCache.get(holeColor)
+const bakePerforationTile = (holeColor: string, texture: HTMLImageElement | null): string => {
+  const key = `${holeColor}|${texture ? 'linen' : 'plain'}`
+  const cached = perforationTileCache.get(key)
   if (cached) return cached
 
   const w = HOLE_TILE_W * BAKE_SCALE
@@ -369,11 +384,22 @@ const bakePerforationTile = (holeColor: string): string => {
   const cy = h / 2
   const r = HOLE_RADIUS * BAKE_SCALE
 
-  // 孔体：页面背景色实心圆
-  ctx.fillStyle = holeColor
+  // 孔体：页面背景色实心圆；有纹理时按原生尺度采样布纹正片叠底，
+  // 与背景板烘焙（bakeTile）同一成色逻辑，孔体与页面背景观感一致
+  ctx.save()
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
-  ctx.fill()
+  ctx.clip()
+  ctx.fillStyle = holeColor
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
+  if (texture) {
+    ctx.globalCompositeOperation = 'multiply'
+    const size = r * 2
+    const sx = (texture.width - size) / 2
+    const sy = (texture.height - size) / 2
+    ctx.drawImage(texture, sx, sy, size, size, cx - r, cy - r, size, size)
+  }
+  ctx.restore()
 
   // 孔内下沿阴影：光来自上方，孔洞深处偏暗
   const inner = ctx.createRadialGradient(cx, cy + r * 0.2, r * 0.3, cx, cy + r * 0.2, r)
@@ -392,7 +418,7 @@ const bakePerforationTile = (holeColor: string): string => {
   ctx.stroke()
 
   const url = canvas.toDataURL('image/png')
-  perforationTileCache.set(holeColor, url)
+  perforationTileCache.set(key, url)
   return url
 }
 
@@ -402,7 +428,7 @@ const tearLinePatternStyle = computed(() => {
     return {
       width: '100%',
       height: '100%',
-      backgroundImage: `url(${bakePerforationTile(props.pageBgColor)})`,
+      backgroundImage: `url(${bakePerforationTile(props.pageBgColor, bgTextureImg.value)})`,
       backgroundRepeat: 'repeat-y',
       backgroundPosition: 'center top',
       backgroundSize: `${HOLE_TILE_W}px ${HOLE_TILE_H}px`,
@@ -453,6 +479,14 @@ const handleDrop = (e: DragEvent) => {
 
 const getTicketElement = () => ticketRef.value
 
+// 当前票根轮廓 mask 的 canvas（含全部缺口镂空），供导出后处理补打缺口
+// （html2canvas 不支持 mask-image，导出时需用它在 canvas 上手动镂空）
+const getMaskCanvas = (): HTMLCanvasElement | null => {
+  const h = Math.round(ticketHeight.value) || 400
+  const w = Math.round(h * 2.35)
+  return getTicketMask(w, h, photoRatio.value)?.canvas ?? null
+}
+
 // 读取当前照片取景状态（缩放/平移 + 铺满基准尺寸），供导出实例做比例映射
 const getPhotoState = () => photoAreaCompRef.value?.getPhotoState()
 
@@ -468,6 +502,7 @@ const prepareForExport = async (photoState?: PhotoState) => {
 
 defineExpose({
   getTicketElement,
+  getMaskCanvas,
   getPhotoState,
   prepareForExport,
 })
