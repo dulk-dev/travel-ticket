@@ -60,17 +60,17 @@ const props = withDefaults(defineProps<Props>(), {
   textColor: "#2C2C2C",
 });
 
-// 通过容器高度计算基准字号（容器高度的 10%，最小 10px）
+// 通过容器高度计算基准字号（容器高度的 6%，最小 6px）
 const infoAreaRef = ref<HTMLElement | null>(null);
-const baseFontSize = ref(10);
+const baseFontSize = ref(6);
 const locationRef = ref<HTMLElement | null>(null);
 const locationScale = ref(1);
 
 const updateFontSize = () => {
   if (!infoAreaRef.value) return;
   const height = infoAreaRef.value.clientHeight;
-  // 基准字号 = 容器高度的 6%，最小 10px
-  baseFontSize.value = Math.max(10, Math.round(height * 0.06));
+  // 基准字号 = 容器高度的 6%，最小 6px
+  baseFontSize.value = Math.max(6, Math.round(height * 0.06));
 };
 
 // 使用 Canvas 测量文字宽度（不受 DOM 渲染状态影响）
