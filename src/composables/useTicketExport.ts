@@ -1,42 +1,10 @@
-import { ref } from 'vue'
-import html2canvas from 'html2canvas'
+import { useCanvasExport, type CanvasExportParams } from './useCanvasExport'
 
 export function useTicketExport() {
-  const isExporting = ref(false)
-  const exportError = ref<string | null>(null)
+  const { isExporting, exportError, exportTicket: canvasExport } = useCanvasExport()
 
-  const exportTicket = async (
-    element: HTMLElement,
-    format: 'png' | 'jpg' = 'png',
-    postProcess?: (canvas: HTMLCanvasElement) => void,
-  ): Promise<string | null> => {
-    isExporting.value = true
-    exportError.value = null
-
-    try {
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: null,
-        logging: false,
-      })
-
-      // 导出后处理（如补回 html2canvas 不支持的 mask 镂空）
-      postProcess?.(canvas)
-
-      const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png'
-      const quality = format === 'jpg' ? 0.92 : undefined
-      const dataUrl = canvas.toDataURL(mimeType, quality)
-
-      isExporting.value = false
-      return dataUrl
-    } catch (err) {
-      console.error('[useTicketExport] html2canvas failed:', err)
-      exportError.value = '导出失败，请重试'
-      isExporting.value = false
-      return null
-    }
+  const exportTicket = async (params: CanvasExportParams): Promise<string | null> => {
+    return canvasExport(params)
   }
 
   const downloadImage = (dataUrl: string, filename: string) => {

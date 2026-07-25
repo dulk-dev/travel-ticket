@@ -60,13 +60,14 @@ travel-ticket/
 │   │   │   └── PhotoArea.vue
 │   │   └── UploadButton/             # 上传按钮
 │   ├── composables/                  # 组合式函数
+│   │   ├── useCanvasExport.ts        # 纯 Canvas 2D 票根导出（替代 html2canvas）
 │   │   ├── useCardTilt.ts            # 卡片 hover 3D 倾斜 + 全息高光
 │   │   ├── useColorExtract.ts        # 图片主色提取
 │   │   ├── useImageUpload.ts         # 图片上传处理（EXIF 仅日期，无网络请求）
 │   │   ├── useMockData.ts            # Mock 数据生成（无网络请求，默认城市写死）
 │   │   ├── usePaperTexture.ts        # 纸张纹理：纹理加载 + 主题色烘焙管线
 │   │   ├── usePhotoTransform.ts      # 照片变换处理
-│   │   └── useTicketExport.ts        # 票根导出（含 a[download] 待容器实测）
+│   │   └── useTicketExport.ts        # 票根导出（封装 useCanvasExport + a[download]）
 │   ├── views/                        # 页面视图
 │   │   └── HomeView.vue              # 首页（票根生成器）
 │   ├── App.vue                       # 根组件

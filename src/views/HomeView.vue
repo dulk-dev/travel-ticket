@@ -422,25 +422,25 @@ const generateRandomCode = (): string => {
 }
 
 const downloadTicket = async (format: 'png' | 'jpg') => {
-  // 导出目标固定为离屏的 4:3 画框（票根 + 布纹背景板边距）；
-  // 可视实例（桌面/移动其一）仅作为取景状态来源。
-  const visibleRef = [ticketCardRef.value, ticketCardRefMobile.value].find(
-    (c) => (c?.getTicketElement()?.offsetWidth ?? 0) > 0,
-  )
-  const exportRef = exportCardRef.value
-  const frame = exportFrameRef.value
-  if (!exportRef || !frame) return
-
-  // 同步重算烘焙值，并把用户在可视票根上的照片取景（缩放/平移）按比例映射到导出实例
-  await exportRef.prepareForExport(visibleRef?.getPhotoState())
-
-  const maskCanvas = exportRef.getMaskCanvas()
-  const dataUrl = await exportTicket(frame, format, (canvas) => {
-    applyTicketMask(canvas, maskCanvas)
-  })
-  if (dataUrl) {
-    const ext = format === 'jpg' ? 'jpg' : 'png'
-    downloadImage(dataUrl, `旅行票根-${ticketInfo.value.code}-${ticketInfo.value.randomCode}.${ext}`)
+  // 纯 Canvas 导出：不依赖 DOM 截图，直接绘制
+  try {
+    const visibleRef = [ticketCardRef.value, ticketCardRefMobile.value].find(
+      (c) => (c?.getTicketElement()?.offsetWidth ?? 0) > 0,
+    )
+    const dataUrl = await exportTicket({
+      imageSrc: imageSrc.value,
+      info: ticketInfo.value,
+      primaryColor: primaryColor.value,
+      paperType: paperType.value,
+      photoState: visibleRef?.getPhotoState(),
+      isDesktop: isDesktop.value,
+    })
+    if (dataUrl) {
+      const ext = format === 'jpg' ? 'jpg' : 'png'
+      downloadImage(dataUrl, `旅行票根-${ticketInfo.value.code}-${ticketInfo.value.randomCode}.${ext}`)
+    }
+  } catch (err) {
+    console.error('[downloadTicket] failed:', err)
   }
 }
 
