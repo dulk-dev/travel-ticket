@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
-    "build:minitool": "vite build --config vite.config.minitool.ts && node scripts/minitool-postbuild.mjs && node scripts/minitool-zip.mjs",
+    "build:minitool": "vite build --config vite.config.minitool.ts && node scripts/minitool-postbuild.mjs && node scripts/minitool-css-compat.mjs && node scripts/minitool-zip.mjs",
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build"
@@ -27,6 +27,7 @@
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/tsconfig": "^0.9.1",
     "archiver": "^8.0.0",
+    "lightningcss": "^1.33.0",
     "npm-run-all2": "^9.0.2",
     "typescript": "~6.0.0",
     "vite": "^8.0.16",
