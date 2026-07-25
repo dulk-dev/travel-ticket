@@ -449,7 +449,7 @@ onMounted(async () => {
   mq.addEventListener('change', (e) => {
     isDesktop.value = e.matches
   })
-  const mockData = await generateMockData()
+  const mockData = generateMockData()
   ticketInfo.value = mockData
 })
 </script>

@@ -18,34 +18,7 @@ export function useImageUpload() {
     return `${y}-${m}-${day}`
   }
 
-  // GPS 坐标逆地理编码为城市名（Nominatim / OSM，与 useMockData 中 IP 定位同属在线兜底策略）
-  // 国内用中文地名，国外用英文地名
-  const pickLocation = (addr: Record<string, string> | null): string =>
-    addr?.city || addr?.town || addr?.county || addr?.village || addr?.state || ''
-
-  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-    try {
-      const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), 6000)
-      const fetchAddr = async (lang: string): Promise<Record<string, string> | null> => {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=10&accept-language=${lang}`,
-          { signal: controller.signal },
-        )
-        if (!response.ok) return null
-        const data = await response.json()
-        return data.address || null
-      }
-      const addr = await fetchAddr('en')
-      const zhAddr = addr?.country_code === 'cn' ? await fetchAddr('zh') : null
-      clearTimeout(timer)
-      return pickLocation(zhAddr) || pickLocation(addr)
-    } catch {
-      // 离线、超时或接口不可用时跳过，保持原地点
-    }
-    return ''
-  }
-
+  // 小工具纯本地不联网，EXIF 仅提取日期，GPS 坐标不做逆地理编码
   const extractExif = async (file: File): Promise<Partial<TicketInfo>> => {
     const result: Partial<TicketInfo> = {}
 
@@ -55,11 +28,6 @@ export function useImageUpload() {
       const takenAt: unknown = exif?.DateTimeOriginal ?? exif?.CreateDate ?? exif?.DateTime
       if (takenAt instanceof Date && !Number.isNaN(takenAt.getTime())) {
         result.date = formatDate(takenAt)
-      }
-
-      if (typeof exif?.latitude === 'number' && typeof exif?.longitude === 'number') {
-        const location = await reverseGeocode(exif.latitude, exif.longitude)
-        if (location) result.location = location
       }
     } catch {
       // 无 EXIF 或解析失败时走下方文件名兜底

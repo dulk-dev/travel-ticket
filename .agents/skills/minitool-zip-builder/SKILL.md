@@ -23,9 +23,9 @@ metadata:
 每一步**动手前必须先读对应 reference 并严格遵守其全部约束**，不要凭记忆产出：
 
 1. **编写 / 适配 HTML** — 先读 [zip-artifact-spec.md](references/zip-artifact-spec.md)：目录结构、`index.html` 模板、路径与资源引用规则，按其编写
-2. **端能力合规** — 先读 [device-capabilities.md](references/device-capabilities.md)：对照「不可用能力 / 行为」逐项扫描原代码，移除或改用其给出的替代写法
+2. **端能力合规** — 先读 [device-capabilities.md](references/device-capabilities.md)：对照「不可用能力 / 行为」逐项核对，命中项移除或改用其给出的替代写法
 3. **跨端适配** — 先读 [cross-platform-h5.md](references/cross-platform-h5.md)：触摸、滚动、安全区、PC vs 真机差异
-4. **改写正确性自查** — 静态核对改写没把应用改坏（被禁 API 无残留调用、脚本加载顺序、引用资源都在 zip 内、未误改业务逻辑），见 [zip-artifact-spec.md](references/zip-artifact-spec.md) 自检清单
+4. **正确性自查** — 静态核对页面能正常运行、无违规能力（被禁 API 无调用 / 残留、脚本加载顺序、引用资源都在 zip 内、改写时未误改业务逻辑），见 [zip-artifact-spec.md](references/zip-artifact-spec.md) 自检清单
 5. **打包** — 逐条核对各 reference 末尾的自检清单，全部通过后再打包
 
 > **产出前提**：交付的 zip 必须同时满足 `zip-artifact-spec.md` 与 `device-capabilities.md` 的全部约束。任何约束以 reference 为准。
@@ -35,5 +35,5 @@ metadata:
 | 文档 | 何时读 |
 | --- | --- |
 | [zip-artifact-spec.md](references/zip-artifact-spec.md) | 写 HTML / 打包时：目录结构、`index.html` 模板、路径与资源引用规则、打包自检 |
-| [device-capabilities.md](references/device-capabilities.md) | 改写 H5 时：哪些能力可用 / 不可用及替代写法、如何实现常见交互（手势、拍照、选图等） |
+| [device-capabilities.md](references/device-capabilities.md) | 处理端能力时：哪些能力可用 / 不可用及替代写法、如何实现常见交互（手势、拍照、选图等） |
 | [cross-platform-h5.md](references/cross-platform-h5.md) | 适配多端时：触摸、滚动、安全区、PC 模拟器与真机差异 |

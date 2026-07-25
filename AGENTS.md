@@ -20,9 +20,12 @@
 travel-ticket/
 ├── .agents/
 │   └── skills/
-│       └── conversation-summary/     # Agent Skill 文件
+│       └── minitool-zip-builder/    # 小红书小工具构建 skill（官方 1.3.1）
 │           ├── SKILL.md
-│           └── reference.md
+│           └── references/
+│               ├── zip-artifact-spec.md
+│               ├── device-capabilities.md
+│               └── cross-platform-h5.md
 ├── .vscode/                          # VS Code 配置
 │   └── settings.json
 ├── docs/
@@ -32,6 +35,10 @@ travel-ticket/
 ├── evidence/                         # Agent 执行证据归档（每次执行独立子文件夹）
 ├── public/                           # 静态资源（不经过构建）
 │   └── favicon.ico
+├── scripts/                          # 构建脚本
+│   ├── minitool-postbuild.mjs        # 小工具 postbuild 清理（crossorigin / .ico / .map）
+│   ├── minitool-zip.mjs              # 小工具 zip 打包
+│   └── minitool-scan.mjs             # 小工具违规 API 扫描
 ├── src/
 │   ├── assets/                       # 样式与静态资源
 │   │   ├── textures/                 # 纸张纹理 tile（512x512 灰度可平铺）
@@ -41,7 +48,6 @@ travel-ticket/
 │   │   │   ├── pearl.jpg             # 珠光纸（程序化生成）
 │   │   │   └── parchment.jpg         # 羊皮纸（扫描图 + 程序化斑驳）
 │   │   ├── base.css
-│   │   ├── logo.svg
 │   │   └── main.css
 │   ├── components/                   # Vue 组件
 │   │   ├── Barcode/                  # 条形码组件
@@ -52,31 +58,29 @@ travel-ticket/
 │   │   ├── TicketCard/               # 票根卡片
 │   │   │   ├── InfoArea.vue
 │   │   │   └── PhotoArea.vue
-│   │   ├── UploadButton/             # 上传按钮
-│   │   ├── icons/                    # 图标组件
-│   │   ├── HelloWorld.vue
-│   │   ├── TheWelcome.vue
-│   │   └── WelcomeItem.vue
+│   │   └── UploadButton/             # 上传按钮
 │   ├── composables/                  # 组合式函数
 │   │   ├── useCardTilt.ts            # 卡片 hover 3D 倾斜 + 全息高光
 │   │   ├── useColorExtract.ts        # 图片主色提取
-│   │   ├── useImageUpload.ts         # 图片上传处理
-│   │   ├── useMockData.ts            # Mock 数据生成
+│   │   ├── useImageUpload.ts         # 图片上传处理（EXIF 仅日期，无网络请求）
+│   │   ├── useMockData.ts            # Mock 数据生成（无网络请求，默认城市写死）
 │   │   ├── usePaperTexture.ts        # 纸张纹理：纹理加载 + 主题色烘焙管线
 │   │   ├── usePhotoTransform.ts      # 照片变换处理
-│   │   └── useTicketExport.ts        # 票根导出
+│   │   └── useTicketExport.ts        # 票根导出（含 a[download] 待容器实测）
 │   ├── views/                        # 页面视图
 │   │   └── HomeView.vue              # 首页（票根生成器）
 │   ├── App.vue                       # 根组件
 │   └── main.ts                       # 入口文件
 ├── artifacts/                        # 构建产物或临时输出
-├── dist/                             # 生产构建输出
+├── dist/                             # 生产构建输出（主版本）
+├── dist-minitool/                    # 小工具构建输出（中间产物）
 ├── AGENTS.md                         # 本文件：Agent 协作规范
 ├── README.md
 ├── env.d.ts
 ├── index.html
 ├── package.json
-├── vite.config.ts
+├── vite.config.ts                    # 主版本 Vite 配置
+├── vite.config.minitool.ts           # 小工具专用 Vite 配置
 ├── tsconfig.json
 ├── tsconfig.app.json
 └── tsconfig.node.json
