@@ -34,7 +34,7 @@ export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
   const MIN_SCALE = 1;
   const MAX_SCALE = 5;
   // 贴边磁吸阈值：拖拽时距离铺边/居中位置在该范围内则自动吸附
-  const SNAP_THRESHOLD = 12;
+  const SNAP_THRESHOLD = 4;
 
   // ---- pinch-to-zoom 状态 ----
   const pinchStartDist = ref(0);
