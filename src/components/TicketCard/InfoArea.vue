@@ -102,11 +102,11 @@ const updateLocationScale = () => {
   const fontSize = baseFontSize.value * 2.0;
 
   // 测量两行文字中较长的一行（Canvas 测量与浏览器渲染存在差异，加 2% 安全边距）
-  const lines = locationLines.value;
+  const [line1, line2] = locationLines.value as [string, string];
   const maxTextWidth =
     Math.max(
-      measureTextWidth(lines[0], fontSize),
-      measureTextWidth(lines[1], fontSize),
+      measureTextWidth(line1, fontSize),
+      measureTextWidth(line2, fontSize),
     ) * 1.02;
 
   if (maxTextWidth > availableWidth) {
@@ -186,7 +186,7 @@ const locationLines = computed(() => {
 // 将语义单元数组均分为两行，尽量保证两行长度均衡
 const splitUnitsIntoTwoLines = (units: string[]): [string, string] => {
   if (units.length === 0) return ["UNKN", "OWN"];
-  if (units.length === 1) return [units[0].toUpperCase(), ""];
+  if (units.length === 1) return [(units[0] ?? "").toUpperCase(), ""];
 
   // 计算总长度，找到最佳分割点使两行字符长度最接近
   const totalLen = units.reduce((sum, u) => sum + u.length, 0);

@@ -188,7 +188,7 @@ export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
   const onTouchStart = (e: TouchEvent) => {
     if (e.touches.length === 1) {
       isDragging.value = true;
-      const t = e.touches[0];
+      const t = e.touches[0]!;
       dragStart.value = { x: t.clientX, y: t.clientY };
       transformStart.value = {
         x: transform.value.translateX,
@@ -196,10 +196,10 @@ export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
       };
     } else if (e.touches.length === 2) {
       isDragging.value = false;
-      const dist = getTouchDist(e.touches[0], e.touches[1]);
+      const dist = getTouchDist(e.touches[0]!, e.touches[1]!);
       pinchStartDist.value = dist;
       pinchStartScale.value = transform.value.scale;
-      pinchStartCenter.value = getTouchCenter(e.touches[0], e.touches[1]);
+      pinchStartCenter.value = getTouchCenter(e.touches[0]!, e.touches[1]!);
       pinchStartTranslate.value = {
         x: transform.value.translateX,
         y: transform.value.translateY,
@@ -210,7 +210,7 @@ export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
   const onTouchMove = (e: TouchEvent) => {
     e.preventDefault();
     if (e.touches.length === 1 && isDragging.value) {
-      const t = e.touches[0];
+      const t = e.touches[0]!;
       const dx = t.clientX - dragStart.value.x;
       const dy = t.clientY - dragStart.value.y;
 
@@ -227,7 +227,7 @@ export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
         translateY: constrained.y,
       };
     } else if (e.touches.length === 2 && pinchStartDist.value > 0) {
-      const dist = getTouchDist(e.touches[0], e.touches[1]);
+      const dist = getTouchDist(e.touches[0]!, e.touches[1]!);
       const scaleRatio = dist / pinchStartDist.value;
       const newScale = Math.max(
         MIN_SCALE,
@@ -235,7 +235,7 @@ export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
       );
 
       const container = getContainerRect();
-      const center = getTouchCenter(e.touches[0], e.touches[1]);
+      const center = getTouchCenter(e.touches[0]!, e.touches[1]!);
       const cx = center.x - container.left - container.width / 2;
       const cy = center.y - container.top - container.height / 2;
       const startCx =
@@ -267,7 +267,7 @@ export function usePhotoTransform(containerRef: Ref<HTMLElement | null>) {
       // 从双指回到单指：重新初始化单指拖拽起点
       pinchStartDist.value = 0;
       isDragging.value = true;
-      const t = e.touches[0];
+      const t = e.touches[0]!;
       dragStart.value = { x: t.clientX, y: t.clientY };
       transformStart.value = {
         x: transform.value.translateX,
