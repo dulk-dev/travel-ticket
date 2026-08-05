@@ -199,7 +199,7 @@ import TicketCard from '@/components/TicketCard/index.vue'
 import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
 import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
-import MadeByFooter from '@/components/MadeByFooter/index.vue'
+import { MadeByFooter } from '@hichaochun/made-by-footer'
 // 纸质选择面板已屏蔽，保留组件代码（入口恢复时取消下方注释）
 // import PaperTexturePanel from '@/components/PaperTexturePanel/index.vue'
 import { useImageUpload, type UploadResult } from '@/composables/useImageUpload'
