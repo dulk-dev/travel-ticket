@@ -47,6 +47,7 @@ travel-ticket/
 │   │   ├── Barcode/                  # 条形码组件
 │   │   ├── ColorPalette/             # 色板选择组件
 │   │   ├── InfoEditor/               # 票根信息编辑组件
+│   │   ├── MadeByFooter/             # 页脚「Made by + 社媒链接」（simple-icons 品牌图标，showEmpty 控制无值占位）
 │   │   ├── PaperTexturePanel/        # 纸质选择面板（5 种纸 + 无纹理）
 │   │   ├── ThemeColorPanel/          # 主题色面板（含预览 + 色板）
 │   │   ├── TicketCard/               # 票根卡片

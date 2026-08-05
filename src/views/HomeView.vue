@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen transition-colors duration-700 ease-out flex items-center justify-center p-4 md:p-8"
+    class="min-h-screen transition-colors duration-700 ease-out flex flex-col items-center justify-center p-4 md:p-8"
     :style="pageBgStyle"
   >
     <!-- 隐藏的文件输入，用于重新上传 -->
@@ -164,6 +164,9 @@
       </div>
     </div>
 
+    <!-- 页脚：Made by + 社媒链接 -->
+    <MadeByFooter class="mt-auto" />
+
     <!-- 导出专用实例：常驻离屏（非 display:none），固定 900px 设计宽度布局。
          导出直接克隆它，可视票根不做任何尺寸切换（避免导出瞬间闪跳）；
          它始终有真实布局，ResizeObserver 烘焙值始终为 900px 状态，天然与窗口尺寸解耦。
@@ -196,6 +199,7 @@ import TicketCard from '@/components/TicketCard/index.vue'
 import ColorPalette from '@/components/ColorPalette/index.vue'
 import InfoEditor from '@/components/InfoEditor/index.vue'
 import ThemeColorPanel from '@/components/ThemeColorPanel/index.vue'
+import MadeByFooter from '@/components/MadeByFooter/index.vue'
 // 纸质选择面板已屏蔽，保留组件代码（入口恢复时取消下方注释）
 // import PaperTexturePanel from '@/components/PaperTexturePanel/index.vue'
 import { useImageUpload, type UploadResult } from '@/composables/useImageUpload'
