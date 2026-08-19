@@ -15,6 +15,12 @@
 - **一键导出**：导出高清 PNG/JPG 票根图片，独立于当前视口尺寸。
 - **响应式布局**：桌面端与移动端均可正常使用。
 
+## 界面预览
+
+| 编辑前 | 编辑后 |
+| --- | --- |
+| <img src="docs/screenshots/editor-before.png" width="360" alt="编辑前"> | <img src="docs/screenshots/editor-after.png" width="360" alt="编辑后"> |
+
 ## 技术栈
 
 - [Vue 3](https://vuejs.org/) + [TypeScript](https://www.typescriptlang.org/)
