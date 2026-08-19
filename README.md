@@ -17,9 +17,13 @@
 
 ## 界面预览
 
-| 编辑前 | 编辑后 |
-| --- | --- |
-| <img src="docs/screenshots/editor-before.png" width="360" alt="编辑前"> | <img src="docs/screenshots/editor-after.png" width="360" alt="编辑后"> |
+### 编辑前
+
+<img src="docs/screenshots/editor-before.png" alt="编辑前" width="600">
+
+### 编辑后
+
+<img src="docs/screenshots/editor-after.png" alt="编辑后" width="600">
 
 ## 技术栈
 
