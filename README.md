@@ -2,6 +2,8 @@
 
 上传旅行照片，一键生成复古票根风格的纪念卡片。
 
+> 🔗 在线体验：[https://ticket.chaochun.cc/](https://ticket.chaochun.cc/)
+
 ## 功能特性
 
 - **照片上传**：支持拖拽或点击上传 JPG/PNG 照片。
